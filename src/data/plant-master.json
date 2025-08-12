@@ -1,0 +1,281 @@
+[
+  {
+    "plant": "Amritsar 1",
+    "manpowerRatePerShift": 425,
+    "powerRatePerUnit": 6.5,
+    "rAndMPerKg": 5.0,
+    "otherMfgPerKg": 2.5,
+    "plantSgaPerKg": 12.5,
+    "corpSgaPerKg": 6.3
+  },
+  {
+    "plant": "Amritsar 2",
+    "manpowerRatePerShift": 425,
+    "powerRatePerUnit": 6.5,
+    "rAndMPerKg": 5.0,
+    "otherMfgPerKg": 2.5,
+    "plantSgaPerKg": 12.5,
+    "corpSgaPerKg": 6.3
+  },
+  {
+    "plant": "Baddi 1",
+    "manpowerRatePerShift": 425,
+    "powerRatePerUnit": 6.5,
+    "rAndMPerKg": 5.0,
+    "otherMfgPerKg": 2.5,
+    "plantSgaPerKg": 12.5,
+    "corpSgaPerKg": 6.3
+  },
+  {
+    "plant": "Baddi 2",
+    "manpowerRatePerShift": 425,
+    "powerRatePerUnit": 6.5,
+    "rAndMPerKg": 5.0,
+    "otherMfgPerKg": 2.5,
+    "plantSgaPerKg": 12.5,
+    "corpSgaPerKg": 6.3
+  },
+  {
+    "plant": "Baddi 3",
+    "manpowerRatePerShift": 425,
+    "powerRatePerUnit": 6.5,
+    "rAndMPerKg": 5.0,
+    "otherMfgPerKg": 2.5,
+    "plantSgaPerKg": 12.5,
+    "corpSgaPerKg": 6.3
+  },
+  {
+    "plant": "Bidadi",
+    "manpowerRatePerShift": 610,
+    "powerRatePerUnit": 6.5,
+    "rAndMPerKg": 0.5,
+    "otherMfgPerKg": 0.9,
+    "plantSgaPerKg": 5.0,
+    "corpSgaPerKg": 2.0
+  },
+  {
+    "plant": "Bidadi-Avinya",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Bidadi-Recycling",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Bommasandra",
+    "manpowerRatePerShift": 610,
+    "powerRatePerUnit": 7.5,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 12.5,
+    "corpSgaPerKg": 6.3
+  },
+  {
+    "plant": "Durg",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Goa",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Guwahati",
+    "manpowerRatePerShift": 480,
+    "powerRatePerUnit": 9.0,
+    "rAndMPerKg": 4.0,
+    "otherMfgPerKg": 2.0,
+    "plantSgaPerKg": 12.5,
+    "corpSgaPerKg": 6.3
+  },
+  {
+    "plant": "Hyderabad 1",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Hyderabad 2",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Hyderabad 3",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Hyderabad 4",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Hyderabad 5",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Jalgaon 1",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Jalgaon 2",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Kanpur",
+    "manpowerRatePerShift": 450,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Kharagpur",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Khorda",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Manesar",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Mysore",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Nandyala",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Pantnagar 1",
+    "manpowerRatePerShift": 480,
+    "powerRatePerUnit": 7.2,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 12.5,
+    "corpSgaPerKg": 6.3
+  },
+  {
+    "plant": "Pantnagar 2",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Silvassa 1",
+    "manpowerRatePerShift": 450,
+    "powerRatePerUnit": 6.5,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Silvassa 2",
+    "manpowerRatePerShift": 450,
+    "powerRatePerUnit": 6.5,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Vizag 1",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  },
+  {
+    "plant": "Vizag 2",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7.0,
+    "rAndMPerKg": 3.0,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8.0,
+    "corpSgaPerKg": 4.0
+  }
+]

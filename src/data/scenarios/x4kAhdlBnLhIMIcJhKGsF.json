@@ -1,0 +1,90 @@
+{
+  "id": "x4kAhdlBnLhIMIcJhKGsF",
+  "name": "TEST",
+  "createdAt": "2025-08-11T15:20:49.917Z",
+  "updatedAt": "2025-08-12T09:49:48.022Z",
+  "sales": {
+    "customer": "",
+    "product": "",
+    "productWeightGrams": 0.34,
+    "conversionRecoveryRsPerPiece": 3.4,
+    "mouldAmortizationRsPerPiece": 10,
+    "discountRsPerPiece": 1,
+    "freightOutSalesRsPerPiece": 5000,
+    "baseAnnualVolumePieces": 22,
+    "yoyGrowthPct": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "inflationPassThrough": true
+  },
+  "npd": {
+    "machineName": "",
+    "cavities": 2,
+    "cycleTimeSeconds": 300,
+    "plant": "",
+    "polymer": "",
+    "masterbatch": ""
+  },
+  "ops": {
+    "oee": 0.89,
+    "powerUnitsPerHour": 9,
+    "automation": false,
+    "manpowerCount": 2,
+    "operatingHoursPerDay": 24,
+    "workingDaysPerYear": 365,
+    "shiftsPerDay": 3
+  },
+  "costing": {
+    "resinRsPerKg": 400,
+    "freightInwardsRsPerKg": 5,
+    "resinDiscountPct": 0.6,
+    "mbRsPerKg": 5,
+    "valueAddRsPerPiece": 99,
+    "packagingRsPerPiece": 10,
+    "freightOutRsPerPiece": 10,
+    "wastagePct": 4,
+    "mbRatioPct": 4,
+    "conversionInflationPct": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "rmInflationPct": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "capex": {
+    "machineCost": 400000,
+    "mouldCost": 10,
+    "workingCapitalDays": 100,
+    "usefulLifeMachineYears": 1,
+    "usefulLifeMouldYears": 1
+  },
+  "finance": {
+    "includeCorpSGA": true,
+    "debtPct": 4,
+    "costOfDebtPct": 5,
+    "costOfEquityPct": 4,
+    "corporateTaxRatePct": 0.25
+  },
+  "altConversion": {},
+  "plantMaster": {
+    "plant": "Hyderabad 1",
+    "manpowerRatePerShift": 500,
+    "powerRatePerUnit": 7,
+    "rAndMPerKg": 3,
+    "otherMfgPerKg": 1.5,
+    "plantSgaPerKg": 8,
+    "corpSgaPerKg": 4
+  }
+}
