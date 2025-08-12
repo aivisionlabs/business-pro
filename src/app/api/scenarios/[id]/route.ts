@@ -9,9 +9,10 @@ const SCENARIO_DIR = path.join(process.cwd(), "src/data/scenarios");
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = params.id;
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
   const file = path.join(SCENARIO_DIR, `${id}.json`);
   try {
     const raw = await fs.readFile(file, "utf-8");
@@ -21,8 +22,9 @@ export async function GET(
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const id = params.id;
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
   const file = path.join(SCENARIO_DIR, `${id}.json`);
   try {
     const input = (await req.json()) as Scenario;

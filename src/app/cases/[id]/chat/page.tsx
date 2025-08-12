@@ -3,6 +3,7 @@ import { Scenario } from "@/lib/types";
 import { calculateScenario } from "@/lib/calc";
 import * as fs from "fs/promises";
 import * as path from "path";
+import Link from "next/link";
 
 async function loadScenario(id: string): Promise<Scenario | null> {
   try {
@@ -30,9 +31,9 @@ export default async function CaseChatPage({
           <div className="text-2xl font-semibold text-slate-900 mb-2">
             Case not found
           </div>
-          <a href="/cases" className="text-blue-600">
+          <Link href="/cases" className="text-blue-600">
             Back to cases
-          </a>
+          </Link>
         </div>
       </main>
     );
@@ -50,12 +51,12 @@ export default async function CaseChatPage({
             </h1>
             <p className="text-slate-600 text-sm">Case ID: {scenario.id}</p>
           </div>
-          <a
+          <Link
             href={`/cases/${scenario.id}`}
             className="px-3 py-1.5 rounded-md bg-slate-900 text-white text-sm"
           >
             Edit Case
-          </a>
+          </Link>
         </div>
         {/* Metrics summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

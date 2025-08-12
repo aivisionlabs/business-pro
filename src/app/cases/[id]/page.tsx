@@ -2,6 +2,7 @@ import ScenarioEditor from "@/components/ScenarioEditor";
 import { Scenario, PlantMaster } from "@/lib/types";
 import * as fs from "fs/promises";
 import * as path from "path";
+import Link from "next/link";
 
 async function loadScenario(id: string): Promise<Scenario | null> {
   try {
@@ -73,9 +74,9 @@ export default async function CaseDetail({
           <div className="text-2xl font-semibold text-slate-900 mb-2">
             Case not found
           </div>
-          <a href="/cases" className="text-blue-600">
+          <Link href="/cases" className="text-blue-600">
             Back to cases
-          </a>
+          </Link>
         </div>
       </main>
     );
@@ -94,12 +95,12 @@ export default async function CaseDetail({
 
         {/* Link to Chat Page */}
         <div className="mt-8 flex justify-end">
-          <a
+          <Link
             href={`/cases/${scenario.id}/chat`}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white shadow-sm hover:bg-blue-700"
           >
             Open Chat for this Case
-          </a>
+          </Link>
         </div>
       </div>
     </main>

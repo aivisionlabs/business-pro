@@ -55,12 +55,12 @@ export function buildPriceByYear(
   const out: PriceYear[] = [];
 
   const materialPerKgY1 = rmY1 + mbY1;
-  const perPieceItemsPerKgY1 =
-    valueAddPerKgY1 +
-    packagingPerKgY1 +
-    freightOutPerKgY1 +
-    mouldAmortPerKgY1 +
-    conversionPerKgY1;
+  // const perPieceItemsPerKgY1 =
+  //   valueAddPerKgY1 +
+  //   packagingPerKgY1 +
+  //   freightOutPerKgY1 +
+  //   mouldAmortPerKgY1 +
+  //   conversionPerKgY1;
   // const pricePerKgY1 = materialPerKgY1 + perPieceItemsPerKgY1;
   const materialPerPieceY1 = materialPerKgY1 * productWeightKg;
   const perPieceItemsY1 =
