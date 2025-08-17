@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { nanoid } from "nanoid";
-import { Scenario } from "@/lib/types";
+import { BusinessCase, Sku } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -22,7 +22,7 @@ export async function GET() {
     if (!f.endsWith(".json")) continue;
     try {
       const raw = await fs.readFile(path.join(SCENARIO_DIR, f), "utf-8");
-      const s = JSON.parse(raw) as Scenario;
+      const s = JSON.parse(raw) as BusinessCase;
       out.push({ id: s.id, name: s.name, updatedAt: s.updatedAt });
     } catch { }
   }
@@ -33,16 +33,14 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   await ensureDir();
   try {
-    const input = (await req.json()) as Partial<Scenario> & { name: string };
+    const input = (await req.json()) as Partial<BusinessCase> & { name: string };
     const now = new Date().toISOString();
     const id = input.id || nanoid();
     const file = path.join(SCENARIO_DIR, `${id}.json`);
-    const scenario: Scenario = {
-      id,
-      name: input.name || `Case-${id}`,
-      createdAt: input.createdAt || now,
-      updatedAt: now,
-      sales: input.sales || {
+    const defaultSku: Sku = {
+      id: nanoid(6),
+      name: "SKU-1",
+      sales: {
         customer: "",
         product: "",
         productWeightGrams: 0.3,
@@ -54,7 +52,7 @@ export async function POST(req: NextRequest) {
         yoyGrowthPct: [0, 0, 0, 0, 0],
         inflationPassThrough: true,
       },
-      npd: input.npd || {
+      npd: {
         machineName: "",
         cavities: 1,
         cycleTimeSeconds: 1,
@@ -62,7 +60,7 @@ export async function POST(req: NextRequest) {
         polymer: "",
         masterbatch: "",
       },
-      ops: input.ops || {
+      ops: {
         oee: 0.8,
         powerUnitsPerHour: 0,
         automation: false,
@@ -71,35 +69,29 @@ export async function POST(req: NextRequest) {
         workingDaysPerYear: 365,
         shiftsPerDay: 3,
       },
-      costing: input.costing || {
+      costing: {
         resinRsPerKg: 0,
         freightInwardsRsPerKg: 0,
         resinDiscountPct: 0,
         mbRsPerKg: 0,
         valueAddRsPerPiece: 0,
-        packagingRsPerPiece: 0,
-        freightOutRsPerPiece: 0,
+        packagingRsPerKg: 0,
+        freightOutRsPerKg: 0,
         wastagePct: 0,
         mbRatioPct: 0,
         conversionInflationPct: [0, 0, 0, 0, 0],
         rmInflationPct: [0, 0, 0, 0, 0],
       },
-      capex: input.capex || {
+      capex: {
         machineCost: 0,
         mouldCost: 0,
+        infraCost: 0,
         workingCapitalDays: 0,
-        usefulLifeMachineYears: 1,
-        usefulLifeMouldYears: 1,
+        usefulLifeMachineYears: 15,
+        usefulLifeMouldYears: 15,
+        usefulLifeInfraYears: 30,
       },
-      finance: input.finance || {
-        includeCorpSGA: true,
-        debtPct: 0,
-        costOfDebtPct: 0,
-        costOfEquityPct: 0,
-        corporateTaxRatePct: 0.25,
-      },
-      altConversion: input.altConversion || {},
-      plantMaster: input.plantMaster || {
+      plantMaster: {
         plant: "",
         manpowerRatePerShift: 0,
         powerRatePerUnit: 0,
@@ -107,7 +99,25 @@ export async function POST(req: NextRequest) {
         otherMfgPerKg: 0,
         plantSgaPerKg: 0,
         corpSgaPerKg: 0,
+        conversionPerKg: 0,
+        sellingGeneralAndAdministrativeExpensesPerKg: 0,
       },
+      altConversion: {},
+    };
+
+    const scenario: BusinessCase = {
+      id,
+      name: input.name || `Case-${id}`,
+      createdAt: input.createdAt || now,
+      updatedAt: now,
+      finance: input.finance || {
+        includeCorpSGA: true,
+        debtPct: 0,
+        costOfDebtPct: 0,
+        costOfEquityPct: 0,
+        corporateTaxRatePct: 0.25,
+      },
+      skus: input.skus && input.skus.length ? input.skus : [defaultSku],
     };
 
     // Write the file and ensure it's completed

@@ -1,5 +1,5 @@
-import ScenarioEditor from "@/components/ScenarioEditor";
-import { Scenario, PlantMaster } from "@/lib/types";
+import MultiSkuEditor from "@/components/MultiSkuEditor";
+import { BusinessCase as Scenario, PlantMaster } from "@/lib/types";
 import * as fs from "fs/promises";
 import * as path from "path";
 import Link from "next/link";
@@ -47,6 +47,8 @@ async function loadPlantMasterData(): Promise<PlantMaster[]> {
         otherMfgPerKg: 1.5,
         plantSgaPerKg: 8.0,
         corpSgaPerKg: 4.0,
+        conversionPerKg: 25.8,
+        sellingGeneralAndAdministrativeExpensesPerKg: 7.2,
       },
     ];
   }
@@ -89,9 +91,9 @@ export default async function CaseDetail({
   console.log("CaseDetail: Rendering page for scenario:", scenario.name);
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-9xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Main Content - Full Width */}
-        <ScenarioEditor scenario={scenario} plantOptions={plants} />
+        <MultiSkuEditor scenario={scenario} plantOptions={plants} />
 
         {/* Link to Chat Page */}
         <div className="mt-8 flex justify-end">

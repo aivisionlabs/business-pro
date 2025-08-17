@@ -197,104 +197,13 @@ async function persistListScenarios(): Promise<{ id: string; name: string; updat
   }
 }
 
-// Normalization and validation helpers
-function clamp01(n: number): number {
-  if (!Number.isFinite(n)) return 0;
-  return Math.max(0, Math.min(1, n));
-}
 
-function ensureLength5(arr: number[]): number[] {
-  const out = Array.from({ length: 5 }, (_, i) => (arr && Number.isFinite(arr[i] as number) ? (arr[i] as number) : 0));
-  return out.map((n) => (Number.isFinite(n) ? n : 0));
-}
-
-function normalizeScenario(input: Scenario): Scenario {
-  log('DEBUG', 'Normalizing scenario', {
-    scenarioId: input.id,
-    hasSales: !!input.sales,
-    hasOps: !!input.ops,
-    hasCosting: !!input.costing,
-    hasCapex: !!input.capex,
-    hasFinance: !!input.finance
-  });
-
-  const s = { ...input } as Scenario;
-
-  // Ensure sales object exists and has required properties
-  if (!s.sales) {
-    throw new Error("Sales data is missing from scenario");
-  }
-
-  log('DEBUG', 'Sales data found', {
-    productWeightGrams: s.sales.productWeightGrams,
-    hasYoyGrowth: !!s.sales.yoyGrowthPct
-  });
-
-  s.sales = {
-    ...s.sales,
-    productWeightGrams: Math.max(0.0001, s.sales.productWeightGrams || 0.0001),
-    yoyGrowthPct: ensureLength5(s.sales.yoyGrowthPct || [0, 0, 0, 0, 0]).map(clamp01),
-  };
-
-  // Ensure ops object exists and has required properties
-  if (!s.ops) {
-    throw new Error("Operations data is missing from scenario");
-  }
-
-  s.ops = {
-    ...s.ops,
-    oee: clamp01(s.ops.oee || 0),
-    operatingHoursPerDay: s.ops.operatingHoursPerDay ?? 24,
-    workingDaysPerYear: s.ops.workingDaysPerYear ?? 365,
-    shiftsPerDay: s.ops.shiftsPerDay ?? 3,
-  };
-
-  // Ensure costing object exists and has required properties
-  if (!s.costing) {
-    throw new Error("Costing data is missing from scenario");
-  }
-
-  s.costing = {
-    ...s.costing,
-    resinDiscountPct: clamp01(s.costing.resinDiscountPct || 0),
-    wastagePct: clamp01(s.costing.wastagePct || 0),
-    mbRatioPct: clamp01(s.costing.mbRatioPct || 0),
-    conversionInflationPct: ensureLength5(s.costing.conversionInflationPct || [0, 0, 0, 0, 0]),
-    rmInflationPct: ensureLength5(s.costing.rmInflationPct || [0, 0, 0, 0, 0]),
-  };
-
-  // Ensure capex object exists and has required properties
-  if (!s.capex) {
-    throw new Error("Capex data is missing from scenario");
-  }
-
-  s.capex = {
-    ...s.capex,
-    usefulLifeMachineYears: Math.max(1, s.capex.usefulLifeMachineYears || 1),
-    usefulLifeMouldYears: Math.max(1, s.capex.usefulLifeMouldYears || 1),
-  };
-
-  // Ensure finance object exists and has required properties
-  if (!s.finance) {
-    throw new Error("Finance data is missing from scenario");
-  }
-
-  s.finance = {
-    ...s.finance,
-    corporateTaxRatePct: clamp01(s.finance.corporateTaxRatePct || 0)
-  };
-
-  log('DEBUG', 'Scenario normalized successfully');
-  return s;
-}
 
 // Tool handlers - deterministic
 function tool_calculateScenario(scenario: Scenario): CalcOutput {
   log('DEBUG', 'Calculating scenario', { scenarioId: scenario.id, scenarioName: scenario.name });
   try {
-    const normalized = normalizeScenario(scenario);
-    log('DEBUG', 'Scenario normalized successfully');
-    const result = calculateScenario(normalized);
+    const result = calculateScenario(scenario);
     log('INFO', 'Scenario calculation completed successfully', {
       scenarioId: scenario.id,
       hasOutput: !!result,

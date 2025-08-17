@@ -1,0 +1,102 @@
+{
+  "id": "33GK8GgtAMMGNMCPzOU4G",
+  "name": "Test",
+  "createdAt": "2025-08-17T14:45:15.707Z",
+  "updatedAt": "2025-08-17T17:45:09.658Z",
+  "finance": {
+    "includeCorpSGA": true,
+    "debtPct": 0,
+    "costOfDebtPct": 0,
+    "costOfEquityPct": 0,
+    "corporateTaxRatePct": 0.25
+  },
+  "skus": [
+    {
+      "id": "DB9aau",
+      "name": "30 ML Sarso",
+      "sales": {
+        "customer": "",
+        "product": "",
+        "productWeightGrams": 5.58,
+        "conversionRecoveryRsPerPiece": 0.35,
+        "mouldAmortizationRsPerPiece": 0,
+        "discountRsPerPiece": 0,
+        "freightOutSalesRsPerPiece": 0,
+        "baseAnnualVolumePieces": 11250000,
+        "yoyGrowthPct": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "inflationPassThrough": true
+      },
+      "npd": {
+        "machineName": "12 M",
+        "cavities": 7,
+        "cycleTimeSeconds": 11,
+        "plant": "",
+        "polymer": "",
+        "masterbatch": "",
+        "mouldCost": 0
+      },
+      "ops": {
+        "oee": 0.8,
+        "powerUnitsPerHour": 0,
+        "automation": false,
+        "manpowerCount": 0,
+        "operatingHoursPerDay": 24,
+        "workingDaysPerYear": 365,
+        "shiftsPerDay": 3,
+        "machineAvailable": true
+      },
+      "costing": {
+        "resinRsPerKg": 0,
+        "freightInwardsRsPerKg": 0,
+        "resinDiscountPct": 0,
+        "mbRsPerKg": 0,
+        "valueAddRsPerPiece": 0,
+        "packagingRsPerPiece": 0,
+        "freightOutRsPerPiece": 0,
+        "wastagePct": 0,
+        "mbRatioPct": 0,
+        "conversionInflationPct": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "rmInflationPct": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "freightOutRsPerKg": 1.01,
+        "packagingRsPerKg": 13.4
+      },
+      "capex": {
+        "machineCost": 0,
+        "mouldCost": 0,
+        "workingCapitalDays": 0,
+        "usefulLifeMachineYears": 1,
+        "usefulLifeMouldYears": 1
+      },
+      "altConversion": {},
+      "plantMaster": {
+        "plant": "Pantnagar 1",
+        "manpowerRatePerShift": 480,
+        "powerRatePerUnit": 7.2,
+        "rAndMPerKg": 3,
+        "otherMfgPerKg": 1.5,
+        "plantSgaPerKg": 12.5,
+        "corpSgaPerKg": 6.3,
+        "conversionPerKg": 25.8,
+        "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
+      }
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { Scenario } from "@/lib/types";
+import { BusinessCase } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -27,9 +27,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const id = resolvedParams.id;
   const file = path.join(SCENARIO_DIR, `${id}.json`);
   try {
-    const input = (await req.json()) as Scenario;
+    const input = (await req.json()) as BusinessCase;
     const now = new Date().toISOString();
-    const scenario: Scenario = { ...input, id, updatedAt: now, createdAt: input.createdAt || now };
+    const scenario: BusinessCase = { ...input, id, updatedAt: now, createdAt: input.createdAt || now };
     await fs.writeFile(file, JSON.stringify(scenario, null, 2), "utf-8");
     return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
   } catch {

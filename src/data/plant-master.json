@@ -6,7 +6,9 @@
     "rAndMPerKg": 5.0,
     "otherMfgPerKg": 2.5,
     "plantSgaPerKg": 12.5,
-    "corpSgaPerKg": 6.3
+    "corpSgaPerKg": 6.3,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Amritsar 2",
@@ -15,7 +17,9 @@
     "rAndMPerKg": 5.0,
     "otherMfgPerKg": 2.5,
     "plantSgaPerKg": 12.5,
-    "corpSgaPerKg": 6.3
+    "corpSgaPerKg": 6.3,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Baddi 1",
@@ -24,7 +28,9 @@
     "rAndMPerKg": 5.0,
     "otherMfgPerKg": 2.5,
     "plantSgaPerKg": 12.5,
-    "corpSgaPerKg": 6.3
+    "corpSgaPerKg": 6.3,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Baddi 2",
@@ -33,7 +39,9 @@
     "rAndMPerKg": 5.0,
     "otherMfgPerKg": 2.5,
     "plantSgaPerKg": 12.5,
-    "corpSgaPerKg": 6.3
+    "corpSgaPerKg": 6.3,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Baddi 3",
@@ -42,7 +50,9 @@
     "rAndMPerKg": 5.0,
     "otherMfgPerKg": 2.5,
     "plantSgaPerKg": 12.5,
-    "corpSgaPerKg": 6.3
+    "corpSgaPerKg": 6.3,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Bidadi",
@@ -51,7 +61,9 @@
     "rAndMPerKg": 0.5,
     "otherMfgPerKg": 0.9,
     "plantSgaPerKg": 5.0,
-    "corpSgaPerKg": 2.0
+    "corpSgaPerKg": 2.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Bidadi-Avinya",
@@ -60,7 +72,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Bidadi-Recycling",
@@ -69,7 +83,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Bommasandra",
@@ -78,7 +94,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 12.5,
-    "corpSgaPerKg": 6.3
+    "corpSgaPerKg": 6.3,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Durg",
@@ -87,7 +105,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Goa",
@@ -96,7 +116,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Guwahati",
@@ -105,7 +127,9 @@
     "rAndMPerKg": 4.0,
     "otherMfgPerKg": 2.0,
     "plantSgaPerKg": 12.5,
-    "corpSgaPerKg": 6.3
+    "corpSgaPerKg": 6.3,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Hyderabad 1",
@@ -114,7 +138,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Hyderabad 2",
@@ -123,7 +149,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Hyderabad 3",
@@ -132,7 +160,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Hyderabad 4",
@@ -141,7 +171,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Hyderabad 5",
@@ -150,7 +182,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Jalgaon 1",
@@ -159,7 +193,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Jalgaon 2",
@@ -168,7 +204,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Kanpur",
@@ -177,7 +215,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Kharagpur",
@@ -186,7 +226,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Khorda",
@@ -195,7 +237,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Manesar",
@@ -204,7 +248,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Mysore",
@@ -213,7 +259,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Nandyala",
@@ -222,7 +270,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Pantnagar 1",
@@ -231,7 +281,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 12.5,
-    "corpSgaPerKg": 6.3
+    "corpSgaPerKg": 6.3,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Pantnagar 2",
@@ -240,7 +292,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Silvassa 1",
@@ -249,7 +303,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Silvassa 2",
@@ -258,7 +314,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Vizag 1",
@@ -267,7 +325,9 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   },
   {
     "plant": "Vizag 2",
@@ -276,6 +336,8 @@
     "rAndMPerKg": 3.0,
     "otherMfgPerKg": 1.5,
     "plantSgaPerKg": 8.0,
-    "corpSgaPerKg": 4.0
+    "corpSgaPerKg": 4.0,
+    "conversionPerKg": 25.80,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
   }
 ]

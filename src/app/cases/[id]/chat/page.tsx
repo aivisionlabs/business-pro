@@ -1,5 +1,5 @@
 import AgentChat from "@/components/AgentChat";
-import { Scenario } from "@/lib/types";
+import { BusinessCase as Scenario } from "@/lib/types";
 import { calculateScenario } from "@/lib/calc";
 import * as fs from "fs/promises";
 import * as path from "path";
@@ -91,30 +91,7 @@ export default async function CaseChatPage({
         <AgentChat
           sessionId={scenario.id}
           title="Chat about this case"
-          initialSystemNote={`You are assisting with business case '${
-            scenario.name
-          }' (id: ${scenario.id}).
-
-You have access to the complete scenario data including:
-- Sales: ${scenario.sales.customer || "N/A"} customer, ${
-            scenario.sales.product || "N/A"
-          } product, ${scenario.sales.productWeightGrams}g weight, ${
-            scenario.sales.baseAnnualVolumePieces
-          } pieces/year
-- NPD: ${scenario.npd.machineName || "N/A"} machine, ${
-            scenario.npd.cavities
-          } cavities, ${scenario.npd.cycleTimeSeconds}s cycle time, ${
-            scenario.npd.plant || "N/A"
-          } plant
-- Operations: ${scenario.ops.oee * 100}% OEE, ${
-            scenario.ops.manpowerCount
-          } people
-- Costing: Rs ${scenario.costing.resinRsPerKg}/kg resin, ${
-            scenario.costing.mbRatioPct
-          }% masterbatch
-- Capex: Rs ${scenario.capex.machineCost.toLocaleString()} machine, Rs ${scenario.capex.mouldCost.toLocaleString()} mould
-
-Use the available tools (calculateScenario, loadScenario, saveScenario, listScenarios, getPlantMaster) to provide accurate analysis. When asked about P&L, pricing, or returns, use the calculateScenario tool with the current scenario data. Always provide specific numbers and insights based on the actual scenario data.`}
+          initialSystemNote={`You are assisting with business case '${scenario.name}' (id: ${scenario.id}). It contains ${scenario.skus.length} SKUs. Use the available tools (calculateScenario, loadScenario, saveScenario, listScenarios, getPlantMaster) to provide accurate analysis. When asked about P&L, pricing, or returns, call calculateScenario with the current case data and explain both aggregated and per-SKU insights.`}
           context={{ scenario }}
           placeholder="Ask about price, P&L, returns, scenarios..."
         />

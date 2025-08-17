@@ -1,12 +1,13 @@
-import { CashflowYear, PnlYear, PriceYear, Scenario } from "@/lib/types";
+import { CashflowYear, FinanceInput, PnlYear, PriceYear, Sku } from "@/lib/types";
 import { computeVolumes } from "./capacity";
 import { safeDiv, irr as computeIrr } from "./utils";
 
-export function buildPnl(
-  scenario: Scenario,
+export function buildPnlForSku(
+  sku: Sku,
+  finance: FinanceInput,
   price: PriceYear[]
 ): { pnl: PnlYear[]; volumes: { year: number; volumePieces: number; weightKg: number }[] } {
-  const { sales, ops, plantMaster, finance } = scenario;
+  const { sales, ops, plantMaster } = sku;
   const volumes = computeVolumes(
     sales.productWeightGrams,
     sales.baseAnnualVolumePieces,
@@ -21,7 +22,7 @@ export function buildPnl(
 
   const pnl: PnlYear[] = [];
 
-  const openingDebt = (finance.debtPct || 0) * (scenario.capex.machineCost + scenario.capex.mouldCost);
+  const openingDebt = (finance.debtPct || 0) * (sku.capex.machineCost + sku.capex.mouldCost);
   const interestRate = finance.costOfDebtPct || 0;
 
   for (const v of volumes) {
@@ -31,11 +32,9 @@ export function buildPnl(
     const revenueGross = p.pricePerPiece * volumePieces;
     const discountExpense = sales.discountRsPerPiece * volumePieces;
     const customerFreightExpense = sales.freightOutSalesRsPerPiece * volumePieces;
-    const revenueNet = revenueGross - discountExpense - customerFreightExpense;
+    const revenueNet = revenueGross - discountExpense;
 
-    const materialCostPerKg = p.perKg.rmPerKg + p.perKg.mbPerKg;
-    const materialCost = materialCostPerKg * weightKg;
-    const materialMargin = revenueNet - materialCost;
+    // const materialCostPerKg = p.perKg.rmPerKg + p.perKg.mbPerKg; // Unused variable
 
     const powerCostTotal =
       ops.powerUnitsPerHour * operatingHoursPerDay * workingDaysPerYear * powerRate;
@@ -45,34 +44,58 @@ export function buildPnl(
       ops.manpowerCount * shiftsPerDay * workingDaysPerYear * manpowerRatePerShift;
     const manpowerCost = safeDiv(manpowerCostTotal, weightKg) * weightKg;
 
-    const valueAddCost = scenario.costing.valueAddRsPerPiece * volumePieces;
-    const packagingCost = scenario.costing.packagingRsPerPiece * volumePieces;
-    const freightOutCost = scenario.costing.freightOutRsPerPiece * volumePieces;
-    const mouldAmortCost = scenario.sales.mouldAmortizationRsPerPiece * volumePieces;
-    const conversionRecoveryCost = (scenario.sales.conversionRecoveryRsPerPiece || 0) * volumePieces;
+    const valueAddCost = sku.costing.valueAddRsPerPiece * volumePieces;
+    const packagingCost = (sku.costing.packagingRsPerKg || 0) * weightKg; // now Rs/kg
+    const freightOutCost = (sku.costing.freightOutRsPerKg || 0) * weightKg; // now Rs/kg
+    const mouldAmortCost = sku.sales.mouldAmortizationRsPerPiece * volumePieces;
+    const conversionRecoveryCost = (sku.sales.conversionRecoveryRsPerPiece || 0) * volumePieces;
+
+    // Update material cost to include RM cost + MB cost + packaging cost + freight cost
+    const materialCost = (p.perKg.rmPerKg + p.perKg.mbPerKg) * weightKg + packagingCost + freightOutCost;
+    const materialMargin = revenueNet - materialCost;
 
     const rAndMCost = plantMaster.rAndMPerKg * weightKg;
     const otherMfgCost = plantMaster.otherMfgPerKg * weightKg;
     const plantSgaCost = plantMaster.plantSgaPerKg * weightKg;
     const corpSgaCost = (finance.includeCorpSGA ? plantMaster.corpSgaPerKg : 0) * weightKg;
+    const sgaCost = plantMaster.sellingGeneralAndAdministrativeExpensesPerKg * weightKg;
+
+    // Debug logging for conversion cost calculation
+    console.log('=== Conversion Cost Debug ===');
+    console.log('plantMaster.conversionPerKg:', plantMaster.conversionPerKg);
+    console.log('weightKg:', weightKg);
+    console.log('plantMaster.conversionPerKg * weightKg:', plantMaster.conversionPerKg * weightKg);
+
+    // Use fallback value if conversionPerKg is not available
+    const conversionPerKg = plantMaster.conversionPerKg ?? 25.80; // Default fallback value
+    console.log('Using conversionPerKg (with fallback):', conversionPerKg);
+    console.log('conversionPerKg * weightKg:', conversionPerKg * weightKg);
 
     const conversionCost =
-      powerCost +
-      manpowerCost +
-      valueAddCost +
-      packagingCost +
-      freightOutCost +
-      mouldAmortCost +
-      conversionRecoveryCost +
-      rAndMCost +
-      otherMfgCost;
+
+      conversionPerKg * weightKg;
+
+    console.log('Final conversionCost:', conversionCost);
+    console.log('=== End Debug ===');
 
     const grossMargin = materialMargin - conversionCost;
-    const ebitda = grossMargin - plantSgaCost - corpSgaCost;
+    const ebitda = revenueNet - materialCost - conversionCost - sgaCost;
 
-    const depMachine = safeDiv(scenario.capex.machineCost, scenario.capex.usefulLifeMachineYears);
-    const depMould = safeDiv(scenario.capex.mouldCost, scenario.capex.usefulLifeMouldYears);
-    const depreciation = depMachine + depMould;
+    // Depreciation calculation using only the 6 required fields
+    const machineInvestment = sku.capex.machineCost || 0;
+    const mouldInvestment = sku.npd.mouldCost || 0;
+    const infraInvestment = sku.capex.infraCost || 0;
+
+    const machineLife = sku.capex.usefulLifeMachineYears || 15; // Default 15 years
+    const mouldLife = sku.capex.usefulLifeMouldYears || 15; // Default 15 years
+    const infraLife = sku.capex.usefulLifeInfraYears || 30; // Default 30 years
+
+    // Depreciation = Investment / Life in years
+    const depMachine = safeDiv(machineInvestment, machineLife);
+    const depMould = safeDiv(mouldInvestment, mouldLife);
+    const depInfra = safeDiv(infraInvestment, infraLife);
+
+    const depreciation = depMachine + depMould + depInfra;
     const ebit = ebitda - depreciation;
 
     const interestCapex = openingDebt * interestRate; // MVP: interest-only
@@ -100,6 +123,7 @@ export function buildPnl(
       otherMfgCost,
       plantSgaCost,
       corpSgaCost,
+      sgaCost,
       conversionCost,
       grossMargin,
       ebitda,
@@ -115,13 +139,14 @@ export function buildPnl(
   return { pnl, volumes };
 }
 
-export function buildCashflowsAndReturns(
-  scenario: Scenario,
-  pnl: PnlYear[]
+export function buildCashflowsAndReturnsForCase(
+  finance: FinanceInput,
+  pnl: PnlYear[],
+  options: { capex0: number; workingCapitalDays: number; annualDepreciationByYear: number[] }
 ): { cashflow: CashflowYear[]; returns: { wacc: number; npv: number; irr: number | null; paybackYears: number | null; roceByYear: { year: number; roce: number; netBlock: number }[] } } {
-  const taxRate = scenario.finance.corporateTaxRatePct || 0;
-  const capex0 = scenario.capex.machineCost + scenario.capex.mouldCost;
-  const nwcDays = scenario.capex.workingCapitalDays || 0;
+  const taxRate = finance.corporateTaxRatePct || 0;
+  const capex0 = options.capex0;
+  const nwcDays = options.workingCapitalDays || 0;
 
   const cashflow: CashflowYear[] = [];
 
@@ -144,10 +169,10 @@ export function buildCashflowsAndReturns(
     });
   }
 
-  const equityPct = 1 - (scenario.finance.debtPct || 0);
+  const equityPct = 1 - (finance.debtPct || 0);
   const wacc =
-    (scenario.finance.debtPct || 0) * (scenario.finance.costOfDebtPct || 0) * (1 - taxRate) +
-    equityPct * (scenario.finance.costOfEquityPct || 0);
+    (finance.debtPct || 0) * (finance.costOfDebtPct || 0) * (1 - taxRate) +
+    equityPct * (finance.costOfEquityPct || 0);
 
   // PV, NPV, cumulative
   let npv = cashflow[0].fcf; // t=0 PV is itself
@@ -176,11 +201,11 @@ export function buildCashflowsAndReturns(
   }
 
   // RoCE and net block
-  const depPerYear =
-    (scenario.capex.machineCost / (scenario.capex.usefulLifeMachineYears || 1)) +
-    (scenario.capex.mouldCost / (scenario.capex.usefulLifeMouldYears || 1));
-  const roceByYear = pnl.map((y) => {
-    const accumulatedDep = depPerYear * y.year;
+  // Use actual aggregated depreciation schedule if provided
+  const roceByYear = pnl.map((y, idx) => {
+    const accumulatedDep = options.annualDepreciationByYear
+      .slice(0, idx + 1)
+      .reduce((a, b) => a + b, 0);
     const netBlock = Math.max(0, capex0 - accumulatedDep);
     const roce = (y.ebit || 0) / Math.max(1e-9, netBlock + (cashflow.find((c) => c.year === y.year)?.nwc || 0));
     return { year: y.year, roce, netBlock };

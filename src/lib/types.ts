@@ -8,6 +8,8 @@ export type PlantMaster = {
   otherMfgPerKg: number; // Rs per kg
   plantSgaPerKg: number; // Rs per kg
   corpSgaPerKg: number; // Rs per kg
+  conversionPerKg: number; // Rs per kg
+  sellingGeneralAndAdministrativeExpensesPerKg: number; // Rs per kg
 };
 
 export type SalesInput = {
@@ -30,6 +32,7 @@ export type NpdInput = {
   plant: string; // key to PlantMaster.plant
   polymer: string;
   masterbatch: string;
+  mouldCost?: number; // moved under NPD as per requirements
 };
 
 export type OpsInput = {
@@ -40,6 +43,7 @@ export type OpsInput = {
   operatingHoursPerDay?: number; // default 24
   workingDaysPerYear?: number; // default 365
   shiftsPerDay?: number; // default 3
+  machineAvailable?: boolean; // UI-only flag; not used in calc yet
 };
 
 export type CostingInput = {
@@ -48,8 +52,12 @@ export type CostingInput = {
   resinDiscountPct: number; // 0..1
   mbRsPerKg: number; // masterbatch cost per kg
   valueAddRsPerPiece: number;
-  packagingRsPerPiece: number;
-  freightOutRsPerPiece: number;
+  // Prefer Rs/kg fields; legacy per-piece kept optional for compatibility
+  packagingRsPerKg: number;
+  freightOutRsPerKg: number;
+  // Legacy optional fields (used as fallback if Rs/kg not provided)
+  packagingRsPerPiece?: number;
+  freightOutRsPerPiece?: number;
   wastagePct: number; // 0..1 on resin and MB
   mbRatioPct: number; // 0..1 of resin replaced by MB
   conversionInflationPct: number[]; // length 5, compounded YoY for conversion and per-piece lines
@@ -60,9 +68,12 @@ export type CostingInput = {
 export type CapexInput = {
   machineCost: number;
   mouldCost: number;
+  infraCost: number;
   workingCapitalDays: number; // days of revenue tied up
   usefulLifeMachineYears: number;
   usefulLifeMouldYears: number;
+  usefulLifeInfraYears: number;
+  investmentRequired?: boolean; // UI-only flag; not used in calc yet
 };
 
 export type FinanceInput = {
@@ -77,19 +88,27 @@ export type AltConversionInput = {
   machineRatePerDayRs?: number; // optional; used if Sales.conversionRecoveryRsPerPiece is missing
 };
 
-export type Scenario = {
+// A single SKU within a business case
+export type Sku = {
   id: string;
   name: string;
-  createdAt: string;
-  updatedAt: string;
   sales: SalesInput;
   npd: NpdInput;
   ops: OpsInput;
   costing: CostingInput;
   capex: CapexInput;
-  finance: FinanceInput;
   altConversion?: AltConversionInput;
-  plantMaster: PlantMaster; // selected plant config
+  plantMaster: PlantMaster; // plant config selected for this SKU
+};
+
+// A business case can now contain multiple SKUs
+export type BusinessCase = {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  finance: FinanceInput; // Finance parameters are case-level and applied to all SKUs
+  skus: Sku[];
 };
 
 export type YearVolumes = {
@@ -134,6 +153,7 @@ export type PnlYear = {
   otherMfgCost: number;
   plantSgaCost: number;
   corpSgaCost: number;
+  sgaCost: number;
   conversionCost: number;
   grossMargin: number;
   ebitda: number;
@@ -162,13 +182,47 @@ export type Returns = {
   roceByYear: { year: number; roce: number; netBlock: number }[];
 };
 
-export type CalcOutput = {
+// Per-SKU output for drill-down views
+export type SkuCalcOutput = {
+  skuId: string;
+  name: string;
   volumes: YearVolumes[];
   prices: PriceYear[];
   pnl: PnlYear[];
+};
+
+// Aggregated case output (sums of SKUs) + optional per-SKU breakdowns
+export type CalcOutput = {
+  // Aggregated across all SKUs
+  volumes: YearVolumes[];
+  prices: PriceYear[]; // price components shown as weighted-average per kg; for simplicity we expose totals derived from first SKU if needed
+  pnl: PnlYear[];
+  weightedAvgPricePerKg: WeightedAvgPricePerKgYear[]; // per-kg values for each P&L line item
   cashflow: CashflowYear[];
   returns: Returns;
+  // Optional per-SKU breakdowns for UI tabs
+  bySku?: SkuCalcOutput[];
 };
+
+export type WeightedAvgPricePerKgYear = {
+  year: number;
+  // Revenue components per kg
+  revenueNetPerKg: number;
+  // Cost components per kg
+  materialCostPerKg: number;
+  materialMarginPerKg: number;
+  conversionCostPerKg: number;
+  grossMarginPerKg: number;
+  sgaCostPerKg: number;
+  ebitdaPerKg: number;
+  depreciationPerKg: number;
+  ebitPerKg: number;
+  pbtPerKg: number;
+  patPerKg: number;
+};
+
+// Temporary alias so existing imports keep working while UI migrates
+export type Scenario = BusinessCase;
 
 
 
