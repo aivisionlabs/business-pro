@@ -88,6 +88,8 @@ export default async function CaseDetail({
   const plants = await loadPlantMasterData();
   console.log("CaseDetail: Loaded", plants.length, "plants");
 
+  // Note: charts are rendered inside MultiSkuEditor just above the debug panel
+
   console.log("CaseDetail: Rendering page for scenario:", scenario.name);
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">

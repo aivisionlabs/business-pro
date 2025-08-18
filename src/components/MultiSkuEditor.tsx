@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { calculateScenario } from "@/lib/calc";
 import { BusinessCase as Scenario, PlantMaster, Sku } from "@/lib/types";
 import { nanoid } from "nanoid";
+import CaseMetricsCharts from "@/components/CaseMetricsCharts";
 
 function Section({
   title,
@@ -703,6 +704,11 @@ export default function MultiSkuEditor({
           </Section>
         </div>
       </div>
+
+      {/* Case Metrics Charts - placed above Debug Panel */}
+      <Section title="📈 Case Performance Charts" className="mt-6">
+        <CaseMetricsCharts calcOutput={calc} />
+      </Section>
 
       {/* Debug Panel */}
       <Section
