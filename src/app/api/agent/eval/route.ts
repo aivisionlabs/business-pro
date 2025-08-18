@@ -57,7 +57,7 @@ export async function GET(_req: NextRequest) {
   });
 
   // What-if: plant (if another plant exists in master)
-  const allPlants = tool_getPlantMaster() as { plant: string }[];
+  const allPlants = tool_getPlantMaster() as unknown as { plant: string }[];
   const targetPlant = allPlants.find(p => p.plant !== base.skus[0]?.plantMaster.plant)?.plant || base.skus[0]?.plantMaster.plant;
   evals.analyzePlantChange = await tool_analyzePlantChange({
     caseId: base.id,
