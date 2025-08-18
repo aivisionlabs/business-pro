@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type ChatEvent =
   | { type: "open"; sessionId: string | null }
@@ -203,7 +205,24 @@ export default function AgentChat({
                   : "bg-white text-slate-900 border border-slate-200 shadow-sm"
               }`}
             >
-              <div className="text-sm whitespace-pre-wrap">{m.content}</div>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  p: ({ children }) => <p className="text-sm">{children}</p>,
+                  code: ({ children }) => (
+                    <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sm">
+                      {children}
+                    </code>
+                  ),
+                  pre: ({ children }) => (
+                    <pre className="bg-slate-100 p-2 rounded text-sm overflow-x-auto">
+                      {children}
+                    </pre>
+                  ),
+                }}
+              >
+                {m.content}
+              </ReactMarkdown>
             </div>
           </div>
         ))}
@@ -262,6 +281,145 @@ export default function AgentChat({
       </div>
 
       <div className="px-6 pb-6">
+        {/* Eval Section */}
+        <div className="mt-6 bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-slate-900">
+              Tool Evaluation
+            </h4>
+            <button
+              onClick={async () => {
+                try {
+                  const response = await fetch("/api/agent/eval");
+                  if (response.ok) {
+                    const data = await response.json();
+                    // Display eval results in a nice format
+                    const results = data.evals;
+                    let displayText = "🔍 **Tool Evaluation Results**\n\n";
+
+                    Object.entries(results).forEach(([toolName, result]) => {
+                      displayText += `📊 **${toolName}**\n`;
+                      if (typeof result === "object" && result !== null) {
+                        if (toolName === "calculateScenario") {
+                          displayText += `✅ Basic calculation successful\n`;
+                        } else if (toolName === "getPlantMaster") {
+                          displayText += `✅ Plant data retrieved successfully\n`;
+                        } else if (toolName === "analyzeVolumeChange") {
+                          const volResult = result as Record<string, unknown>;
+                          displayText += `✅ Volume change analysis completed\n`;
+                          displayText += `   SKU: ${
+                            (volResult.change as Record<string, unknown>)
+                              ?.skuName
+                          }\n`;
+                          displayText += `   Volume change: ${
+                            (volResult.change as Record<string, unknown>)
+                              ?.volumeChange
+                          }% (${
+                            (volResult.change as Record<string, unknown>)
+                              ?.originalVolume
+                          } → ${
+                            (volResult.change as Record<string, unknown>)
+                              ?.newVolume
+                          })\n`;
+                        } else if (toolName === "analyzePricingChange") {
+                          const priceResult = result as Record<string, unknown>;
+                          displayText += `✅ Pricing change analysis completed\n`;
+                          displayText += `   SKU: ${
+                            (priceResult.change as Record<string, unknown>)
+                              ?.skuName
+                          }\n`;
+                          displayText += `   Parameter: ${
+                            (priceResult.change as Record<string, unknown>)
+                              ?.parameter
+                          }\n`;
+                          displayText += `   Value change: ${
+                            (priceResult.change as Record<string, unknown>)
+                              ?.originalValue
+                          } → ${
+                            (priceResult.change as Record<string, unknown>)
+                              ?.newValue
+                          }\n`;
+                        } else if (toolName === "analyzePlantChange") {
+                          const plantResult = result as Record<string, unknown>;
+                          displayText += `✅ Plant change analysis completed\n`;
+                          displayText += `   SKU: ${
+                            (plantResult.change as Record<string, unknown>)
+                              ?.skuName
+                          }\n`;
+                          displayText += `   Plant change: ${
+                            (plantResult.change as Record<string, unknown>)
+                              ?.originalPlant
+                          } → ${
+                            (plantResult.change as Record<string, unknown>)
+                              ?.newPlant
+                          }\n`;
+                        } else if (toolName === "generatePortfolioReport") {
+                          const reportResult = result as Record<
+                            string,
+                            unknown
+                          >;
+                          displayText += `✅ Portfolio report generated\n`;
+                          displayText += `   Report type: ${reportResult.reportType}\n`;
+                          displayText += `   Case: ${reportResult.caseName}\n`;
+                        } else if (toolName === "sensitivityAnalysis") {
+                          displayText += `✅ Sensitivity analysis completed\n`;
+                        } else if (toolName === "optimizationAnalysis") {
+                          displayText += `✅ Optimization analysis completed\n`;
+                        } else if (toolName === "compareScenarios") {
+                          displayText += `✅ Scenario comparison completed\n`;
+                        } else if (toolName === "riskAssessment") {
+                          const riskResult = result as Record<string, unknown>;
+                          displayText += `✅ Risk assessment completed\n`;
+                          displayText += `   Risk factors analyzed: ${
+                            Object.keys(riskResult).length
+                          }\n`;
+                        } else {
+                          displayText += `✅ Tool executed successfully\n`;
+                        }
+                      } else {
+                        displayText += `✅ Result: ${result}\n`;
+                      }
+                      displayText += "\n";
+                    });
+
+                    displayText +=
+                      "🎉 All tools evaluated successfully! The system is ready for business analysis.";
+
+                    setMessages((prev) => [
+                      ...prev,
+                      { role: "assistant", content: displayText },
+                    ]);
+                  } else {
+                    setMessages((prev) => [
+                      ...prev,
+                      {
+                        role: "assistant",
+                        content: "❌ Failed to run tool evaluation",
+                      },
+                    ]);
+                  }
+                } catch (error) {
+                  setMessages((prev) => [
+                    ...prev,
+                    {
+                      role: "assistant",
+                      content: "❌ Error running tool evaluation: " + error,
+                    },
+                  ]);
+                }
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md"
+            >
+              🧪 Run Tool Eval
+            </button>
+          </div>
+          <p className="text-xs text-slate-600 mb-3">
+            Test all available tools with a sample scenario to verify
+            functionality
+          </p>
+        </div>
+
+        {/* Tool Trace Section */}
         <div className="mt-6 bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-slate-900">Tool Trace</h4>

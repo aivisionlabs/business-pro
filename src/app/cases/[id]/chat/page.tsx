@@ -5,6 +5,11 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import Link from "next/link";
 
+function formatCrores(n: number): string {
+  const crores = n / 10000000; // Convert to crores
+  return `₹${crores.toFixed(2).replace(/\.?0+$/, "")} Cr`;
+}
+
 async function loadScenario(id: string): Promise<Scenario | null> {
   try {
     const SCENARIO_DIR = path.join(process.cwd(), "src/data/scenarios");
@@ -63,19 +68,19 @@ export default async function CaseChatPage({
           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm text-center">
             <div className="text-xs text-slate-600 mb-1">Price/pc (Y1)</div>
             <div className="text-xl font-semibold text-slate-900">
-              Rs {calc.prices[0]?.pricePerPiece.toFixed(4)}
+              ₹{calc.prices[0]?.pricePerPiece.toFixed(4)}
             </div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm text-center">
             <div className="text-xs text-slate-600 mb-1">Revenue (Y1)</div>
             <div className="text-xl font-semibold text-slate-900">
-              {Math.round(calc.pnl[0]?.revenueNet || 0).toLocaleString()}
+              {formatCrores(calc.pnl[0]?.revenueNet || 0)}
             </div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm text-center">
             <div className="text-xs text-slate-600 mb-1">EBITDA (Y1)</div>
             <div className="text-xl font-semibold text-slate-900">
-              {Math.round(calc.pnl[0]?.ebitda || 0).toLocaleString()}
+              {formatCrores(calc.pnl[0]?.ebitda || 0)}
             </div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm text-center">

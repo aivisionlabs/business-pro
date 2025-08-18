@@ -3,6 +3,24 @@ import { buildPriceByYear, buildWeightedAvgPricePerKg, buildWeightedAvgPricePerK
 import { buildPnlForSku, buildCashflowsAndReturnsForCase } from "./pnl";
 
 export function calculateScenario(bcase: BusinessCase): CalcOutput {
+  // Validate input structure
+  if (!bcase || !bcase.skus || !Array.isArray(bcase.skus)) {
+    console.error('Invalid BusinessCase structure:', bcase);
+    throw new Error('Invalid BusinessCase: missing or invalid skus array');
+  }
+
+  if (bcase.skus.length === 0) {
+    throw new Error('BusinessCase must contain at least one SKU');
+  }
+
+  // Validate each SKU has required structure
+  bcase.skus.forEach((sku, index) => {
+    if (!sku.sales || !sku.costing || !sku.npd || !sku.ops || !sku.capex || !sku.plantMaster) {
+      console.error(`SKU ${index} missing required properties:`, sku);
+      throw new Error(`SKU ${index} missing required properties`);
+    }
+  });
+
   // Compute per-SKU breakdowns
   const bySku: SkuCalcOutput[] = bcase.skus.map((sku) => {
     const prices: PriceYear[] = buildPriceByYear(
@@ -88,6 +106,11 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
       acc.tax += y.tax;
       acc.pat += y.pat;
     }
+
+    // Recalculate gross margin and EBITDA based on aggregated values (following pnl.ts formulas)
+    acc.grossMargin = acc.materialMargin - acc.conversionCost;
+    acc.ebitda = acc.revenueNet - acc.materialCost - acc.conversionCost - acc.sgaCost;
+
     return acc;
   });
 

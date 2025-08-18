@@ -1,8 +1,8 @@
 {
-  "id": "33GK8GgtAMMGNMCPzOU4G",
-  "name": "Test",
+  "id": "33GK8GgtAMMCPzOU4G",
+  "name": "Dabur Business Case",
   "createdAt": "2025-08-17T14:45:15.707Z",
-  "updatedAt": "2025-08-18T05:32:37.101Z",
+  "updatedAt": "2025-08-18T06:27:11.416Z",
   "finance": {
     "includeCorpSGA": true,
     "debtPct": 0,
@@ -52,38 +52,38 @@
         "machineAvailable": true
       },
       "costing": {
-        "resinRsPerKg": 1.02,
-        "freightInwardsRsPerKg": 0,
-        "resinDiscountPct": 0,
-        "mbRsPerKg": 0,
-        "valueAddRsPerPiece": 0,
-        "packagingRsPerPiece": 0,
-        "freightOutRsPerPiece": 0,
-        "wastagePct": 0,
-        "mbRatioPct": 0,
+        "resinRsPerKg": 115,
+        "freightInwardsRsPerKg": 2,
+        "resinDiscountPct": 0.02,
+        "mbRsPerKg": 180,
+        "valueAddRsPerPiece": 0.15,
+        "packagingRsPerPiece": 0.06,
+        "freightOutRsPerPiece": 0.04,
+        "wastagePct": 0.02,
+        "mbRatioPct": 0.03,
         "conversionInflationPct": [
           0,
-          0,
-          0,
-          0,
-          0
+          0.05,
+          0.05,
+          0.04,
+          0.04
         ],
         "rmInflationPct": [
           0,
-          0,
-          0,
-          0,
-          0
+          0.06,
+          0.06,
+          0.05,
+          0.05
         ],
         "freightOutRsPerKg": 1.01,
-        "packagingRsPerKg": 13.4
+        "packagingRsPerKg": 13.42
       },
       "capex": {
-        "machineCost": 0,
-        "mouldCost": 0,
-        "workingCapitalDays": 0,
-        "usefulLifeMachineYears": 1,
-        "usefulLifeMouldYears": 1
+        "machineCost": 15000000,
+        "mouldCost": 5000000,
+        "workingCapitalDays": 30,
+        "usefulLifeMachineYears": 15,
+        "usefulLifeMouldYears": 5
       },
       "altConversion": {},
       "plantMaster": {

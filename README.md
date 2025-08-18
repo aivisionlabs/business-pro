@@ -1,110 +1,126 @@
-Business Pro – a pricing and returns calculator for plastic packaging SKUs, built with Next.js + TypeScript.
+# Business Pro - Multi-SKU Financial Analysis Platform
 
-### What’s included
-- **Deterministic calculator**: interactive UI and API powered by `src/lib/calc/*`
-- **Agentic chat**: `/chat` UI backed by Google Vertex AI with function calling to the deterministic engine
-- **Local data**: plant master and scenarios stored as JSON under `src/data/*`
+A comprehensive business analysis platform for plastic packaging pricing and returns, featuring multi-SKU support and advanced what-if analysis capabilities.
 
-## Prerequisites
-- Node.js 18+
-- A Google Cloud project with Vertex AI API enabled
-- Authentication for server runtime (one of):
-  - `gcloud auth application-default login` on your dev machine, or
-  - Service account JSON and `GOOGLE_APPLICATION_CREDENTIALS` pointing to it
+## Features
 
-## Setup
-1) Install dependencies
+### Core Business Analysis
+- **Multi-SKU Support**: Manage and analyze business cases with multiple SKUs
+- **Financial Calculations**: P&L, NPV, IRR, cash flows, and returns analysis
+- **Plant Management**: Plant-specific costing and efficiency metrics
+- **Scenario Management**: Save, load, and compare business scenarios
+
+### Advanced What-If Analysis Tools
+- **Volume Change Analysis**: Analyze impact of volume changes on profitability
+- **Pricing Change Analysis**: Understand impact of pricing/costing parameter changes
+- **Plant Change Analysis**: Evaluate moving SKUs between different plants
+- **Sensitivity Analysis**: Identify key drivers and their impact on business metrics
+- **Optimization Analysis**: Find optimal parameter combinations for business objectives
+- **Scenario Comparison**: Compare multiple modified scenarios side-by-side
+- **Risk Assessment**: Assess business case risks and provide mitigation strategies
+- **Portfolio Reports**: Generate comprehensive business case analysis reports
+
+## Quick Start
+
+### 1. Setup
 ```bash
 npm install
-```
-
-2) Configure environment
-- Required:
-  - `GOOGLE_CLOUD_PROJECT` (or `GCLOUD_PROJECT`)
-- Optional (defaults shown):
-  - `GOOGLE_VERTEX_LOCATION=us-central1`
-  - `VERTEX_MODEL_ID=gemini-1.5-pro-002`
-
-Example for local dev (bash/zsh):
-```bash
-export GOOGLE_CLOUD_PROJECT=your-gcp-project-id
-# if using a service account key
-export GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/key.json
-export GOOGLE_VERTEX_LOCATION=us-central1
-export VERTEX_MODEL_ID=gemini-1.5-pro-002
-```
-
-## Run
-```bash
 npm run dev
 ```
-Open `http://localhost:3000`.
 
-## How to use
-### 1) Calculator UI (deterministic)
-- Go to `/` (home). Adjust values in the sections:
-  - Sales, NPD/Ops/Plant, Costing, Capex & Finance
-- Outputs auto-recalculate (Price build-up, P&L Y1..Y5, Returns & RoCE)
-- Buttons: Export JSON (scenario+result), Export P&L CSV
+### 2. Access the Platform
+- **Main Chat**: `/chat` - General business analysis questions
+- **Case Management**: `/cases` - View and manage business cases
+- **Case Analysis**: `/cases/[id]` - Edit and analyze specific cases
+- **Case Chat**: `/cases/[id]/chat` - Chat about specific business cases
 
-Key files:
-- `src/lib/calc/*` – deterministic engine (source of truth for numbers)
-- `src/app/page.tsx` – calculator UI
-- `src/app/api/calc/route.ts` – raw calculation API
-- `src/data/plant-master.json` – plant-level rates
-- `src/data/examples/veeba.json` – sample scenario
+### 3. Test All Tools
+Use the **🧪 Run Tool Eval** button in any chat interface to test all available analysis tools with a sample scenario.
 
-### 2) Agent Chat (Vertex AI + tools)
-- Go to `/chat`
-- Ask natural language questions like:
-  - “What’s the price per piece if resin increases 6% YoY and volume is 12M?”
-  - “Why is EBITDA low in Y3?”
-  - “Save this as Veeba-v2 and list scenarios.”
-- The UI shows responses and a tool-call trace inline.
+## Tool Evaluation
 
-Backend details:
-- Endpoint: `POST /api/agent` streams Server-Sent Events
-- Tools (server-only) call the deterministic engine and local data:
-  - `calculateScenario(scenario)`
-  - `getPlantMaster(plant?)`
-  - `listScenarios()`
-  - `loadScenario({ id })`
-  - `saveScenario({ scenario })`
-- Scenarios persist under `src/data/scenarios/*.json` (dev-only storage)
+The platform includes a comprehensive evaluation system that tests all tools:
 
-### 3) APIs
-- Calculate scenario directly:
+### API Endpoint
+- **GET** `/api/agent/eval` - Runs all tools with sample data
+
+### What Gets Tested
+1. **Basic Calculations**: `calculateScenario`
+2. **Data Access**: `getPlantMaster` (all plants + specific plant)
+3. **Volume Analysis**: `analyzeVolumeChange` (50% reduction)
+4. **Pricing Analysis**: `analyzePricingChange` (conversion recovery change)
+5. **Plant Analysis**: `analyzePlantChange` (move SKU to different plant)
+6. **Portfolio Reports**: `generatePortfolioReport` (summary with SKUs)
+7. **Sensitivity Analysis**: `sensitivityAnalysis` (resin price sensitivity)
+8. **Optimization**: `optimizationAnalysis` (maximize NPV)
+9. **Scenario Comparison**: `compareScenarios` (volume vs plant changes)
+10. **Risk Assessment**: `riskAssessment` (material price + demand risks)
+
+### Example Questions You Can Ask
+
+#### Volume & Pricing Changes
+- "What happens if SKU3 volumes reduce by half?"
+- "What's the impact of doubling conversion recovery for SKU2?"
+- "How does a 15% increase in resin prices affect profitability?"
+
+#### Plant & Operational Changes
+- "What happens if we move SKU2 to Plant B?"
+- "How does changing from 2 shifts to 3 shifts affect costs?"
+
+#### Strategic Analysis
+- "Which factors are most sensitive to changes in our business case?"
+- "What's the optimal resin price to maximize IRR?"
+- "Compare our current strategy with a 20% volume increase scenario"
+- "What are the main risks to our business plan and how can we mitigate them?"
+
+## Architecture
+
+### Data Structure
+- **BusinessCase**: Container for multiple SKUs with shared finance parameters
+- **SKU**: Individual product with sales, NPD, ops, costing, and capex data
+- **PlantMaster**: Plant-specific configuration and cost parameters
+
+### Calculation Engine
+- **Per-SKU Calculations**: Individual SKU financial metrics
+- **Aggregated Results**: Portfolio-level financial performance
+- **Weighted Averages**: Cross-SKU metrics using volume weights
+
+### Tool System
+- **Deterministic Tools**: All calculations use actual business logic
+- **What-If Analysis**: Scenario modification and comparison
+- **Strategic Tools**: Optimization, sensitivity, and risk analysis
+
+## Development
+
+### Build
 ```bash
-curl -sS http://localhost:3000/api/calc \
-  -H 'Content-Type: application/json' \
-  -d @src/data/examples/veeba.json | jq '.prices[0], .pnl[0], .returns'
+npm run build
 ```
 
-- Agent endpoint (SSE). Minimal example:
+### Lint
 ```bash
-curl -N http://localhost:3000/api/agent \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "messages": [
-      { "role": "user", "content": "What is Y1 price per piece for the sample?" }
-    ]
-  }'
+npm run lint
 ```
 
-## Data and persistence
-- Plant master: `src/data/plant-master.json`
-- Scenarios: `src/data/scenarios/*.json` (auto-created). Not production-grade storage.
+### Key Files
+- `src/app/api/agent/route.ts` - Main agent API with all tools
+- `src/app/api/agent/eval/route.ts` - Tool evaluation endpoint
+- `src/components/AgentChat.tsx` - Chat interface with eval button
+- `src/lib/calc/` - Calculation engine
+- `src/lib/types.ts` - Type definitions
 
-## Troubleshooting
-- Vertex AI auth errors (401/403):
-  - Ensure `GOOGLE_CLOUD_PROJECT` is set and ADC is configured (gcloud or service account)
-  - Enable Vertex AI API in your GCP project
-  - Service account should have sufficient roles (e.g., Vertex AI User)
-- Missing model/location: set `VERTEX_MODEL_ID` and `GOOGLE_VERTEX_LOCATION`
+## Business Value
 
-## Notes
-- `/api/agent` runs on Node.js runtime to allow file IO for scenarios.
-- All numeric outputs are produced by the deterministic engine (`src/lib/calc/*`). The agent never freehands math.
+- **Immediate Impact Analysis**: Quickly see financial impact of changes
+- **Data-Driven Decisions**: All calculations use actual business logic
+- **Strategic Planning**: Advanced tools help with optimization and risk management
+- **User Experience**: Intuitive SKU names make system accessible to business users
+- **Comprehensive Analysis**: Multiple perspectives (Revenue, EBITDA, NPV, IRR)
 
-## References
-- `docs/agent-chat-spec.md` – agentic chat design and contracts
+## Next Steps
+
+The platform is ready for business users to:
+1. **Start Using**: Ask what-if questions through the chat interface
+2. **Test Scenarios**: Try different business scenarios and see their financial impact
+3. **Strategic Planning**: Use advanced tools for portfolio optimization and risk assessment
+4. **Further Enhancements**: Add more specific business logic or additional analysis tools as needed

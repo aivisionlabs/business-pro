@@ -86,9 +86,22 @@ function LabeledSelect({
   );
 }
 
-function formatRs(n: number): string {
-  return `Rs ${n.toFixed(2).replace(/\.?0+$/, "")}`;
+function formatCrores(n: number): string {
+  const crores = n / 10000000; // Convert to crores
+  return `₹${crores.toFixed(2).replace(/\.?0+$/, "")} Cr`;
 }
+
+function formatPerKg(n: number): string {
+  // For per-kg values, show in rupees per kg with appropriate precision
+  if (n >= 1000) {
+    return `₹${(n / 1000).toFixed(2).replace(/\.?0+$/, "")}K/kg`;
+  } else if (n >= 1) {
+    return `₹${n.toFixed(2).replace(/\.?0+$/, "")}/kg`;
+  } else {
+    return `₹${(n * 1000).toFixed(0)}/g`;
+  }
+}
+
 function formatPct(n: number): string {
   return `${(n * 100).toFixed(1)}%`;
 }
@@ -489,19 +502,19 @@ export default function MultiSkuEditor({
               <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
                 <div className="text-xs text-slate-600 mb-1">Revenue (Y1)</div>
                 <div className="text-lg font-semibold text-slate-900">
-                  {formatRs(calc.pnl[0]?.revenueNet || 0)}
+                  {formatCrores(calc.pnl[0]?.revenueNet || 0)}
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
                 <div className="text-xs text-slate-600 mb-1">EBITDA (Y1)</div>
                 <div className="text-lg font-semibold text-slate-900">
-                  {formatRs(calc.pnl[0]?.ebitda || 0)}
+                  {formatCrores(calc.pnl[0]?.ebitda || 0)}
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
                 <div className="text-xs text-slate-600 mb-1">NPV</div>
                 <div className="text-lg font-semibold text-slate-900">
-                  {formatRs(calc.returns.npv)}
+                  {formatCrores(calc.returns.npv)}
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
@@ -609,7 +622,7 @@ export default function MultiSkuEditor({
                         </td>
                         {Array.from({ length: 5 }, (_, idx) => (
                           <td key={idx} className="p-2 text-right font-mono">
-                            {getter(idx).toFixed(6)}
+                            {formatPerKg(getter(idx))}
                           </td>
                         ))}
                       </tr>
@@ -679,7 +692,7 @@ export default function MultiSkuEditor({
                       <td className="p-2 text-slate-700">{label as string}</td>
                       {calc.pnl.map((y) => (
                         <td key={y.year} className="p-2 text-right font-mono">
-                          {formatRs(getter(y))}
+                          {formatCrores(getter(y))}
                         </td>
                       ))}
                     </tr>
@@ -844,22 +857,22 @@ export default function MultiSkuEditor({
                         <>
                           <div className="font-medium">Y{pnl.year}</div>
                           <div className="font-mono">
-                            {pnl.revenueNet.toLocaleString()}
+                            {formatCrores(pnl.revenueNet)}
                           </div>
                           <div className="font-mono">
-                            {pnl.materialCost.toLocaleString()}
+                            {formatCrores(pnl.materialCost)}
                           </div>
                           <div className="font-mono">
-                            {pnl.conversionCost.toLocaleString()}
+                            {formatCrores(pnl.conversionCost)}
                           </div>
                           <div className="font-mono">
-                            {pnl.grossMargin.toLocaleString()}
+                            {formatCrores(pnl.grossMargin)}
                           </div>
                           <div className="font-mono">
-                            {pnl.ebitda.toLocaleString()}
+                            {formatCrores(pnl.ebitda)}
                           </div>
                           <div className="font-mono">
-                            {pnl.pat.toLocaleString()}
+                            {formatCrores(pnl.pat)}
                           </div>
                           <div className="font-mono">
                             {((pnl.pat / (pnl.revenueNet || 1)) * 100).toFixed(
@@ -1073,11 +1086,11 @@ export default function MultiSkuEditor({
                       </div>
                       <div>
                         <span className="text-gray-600">Machine Cost:</span> ₹
-                        {sku.capex.machineCost.toLocaleString()}
+                        {formatCrores(sku.capex.machineCost)}
                       </div>
                       <div>
                         <span className="text-gray-600">Mould Cost:</span> ₹
-                        {sku.capex.mouldCost.toLocaleString()}
+                        {formatCrores(sku.capex.mouldCost)}
                       </div>
                     </div>
                   </div>
