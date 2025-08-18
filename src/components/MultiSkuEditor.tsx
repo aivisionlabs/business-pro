@@ -118,6 +118,11 @@ export default function MultiSkuEditor({
   const [activeSkuId, setActiveSkuId] = useState<string>(
     initial.skus[0]?.id || ""
   );
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const activeSkuIndex = Math.max(
     0,
     scenario.skus.findIndex((s) => s.id === activeSkuId)
@@ -125,6 +130,14 @@ export default function MultiSkuEditor({
   const sku = scenario.skus[activeSkuIndex];
 
   useEffect(() => setScenario(initial), [initial]);
+
+  // Clear save message after 3 seconds
+  useEffect(() => {
+    if (saveMessage) {
+      const timer = setTimeout(() => setSaveMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveMessage]);
 
   const calc = useMemo(() => calculateScenario(scenario), [scenario]);
 
@@ -225,11 +238,38 @@ export default function MultiSkuEditor({
   }
 
   async function handleSave() {
-    await fetch(`/api/scenarios/${scenario.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(scenario),
-    });
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    try {
+      const response = await fetch(`/api/scenarios/${scenario.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scenario),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error || `Save failed with status: ${response.status}`
+        );
+      }
+
+      const result = await response.json();
+      if (result.ok) {
+        setSaveMessage({ type: "success", text: "Case saved successfully!" });
+      } else {
+        throw new Error("Save failed");
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      setSaveMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to save case",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -243,11 +283,28 @@ export default function MultiSkuEditor({
         </div>
         <button
           onClick={handleSave}
-          className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow"
+          disabled={isSaving}
+          className={`px-4 py-2 rounded-lg text-white shadow transition-colors ${
+            isSaving
+              ? "bg-blue-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+          }`}
         >
-          Save
+          {isSaving ? "Saving..." : "Save"}
         </button>
       </div>
+
+      {saveMessage && (
+        <div
+          className={`p-3 rounded-lg ${
+            saveMessage.type === "success"
+              ? "bg-green-50 text-green-800"
+              : "bg-red-50 text-red-800"
+          }`}
+        >
+          {saveMessage.text}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
         <div className="xl:col-span-3 space-y-4">
@@ -534,7 +591,7 @@ export default function MultiSkuEditor({
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm text-slate-900">
                 <thead>
-                  <tr className="border-b border-slate-200">
+                  <tr className="border-b border-slate-200 text-slate-700">
                     <th className="text-left p-2">Line Item</th>
                     {Array.from({ length: 5 }, (_, i) => i + 1).map((y) => (
                       <th key={y} className="text-right p-2">

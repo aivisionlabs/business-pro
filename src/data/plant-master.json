@@ -29,8 +29,8 @@
     "otherMfgPerKg": 2.5,
     "plantSgaPerKg": 12.5,
     "corpSgaPerKg": 6.3,
-    "conversionPerKg": 25.80,
-    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
+    "conversionPerKg": 28.23,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.7
   },
   {
     "plant": "Baddi 2",
@@ -40,8 +40,8 @@
     "otherMfgPerKg": 2.5,
     "plantSgaPerKg": 12.5,
     "corpSgaPerKg": 6.3,
-    "conversionPerKg": 25.80,
-    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
+    "conversionPerKg": 28.23,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.7
   },
   {
     "plant": "Baddi 3",
@@ -51,8 +51,8 @@
     "otherMfgPerKg": 2.5,
     "plantSgaPerKg": 12.5,
     "corpSgaPerKg": 6.3,
-    "conversionPerKg": 25.80,
-    "sellingGeneralAndAdministrativeExpensesPerKg": 7.2
+    "conversionPerKg": 28.23,
+    "sellingGeneralAndAdministrativeExpensesPerKg": 7.7
   },
   {
     "plant": "Bidadi",
