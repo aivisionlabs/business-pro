@@ -3,7 +3,7 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Business Pro - Plastic Packaging Calculator",
+  title: "BusinessCase Pro - Plastic Packaging Calculator",
   description:
     "Pricing and returns calculator for plastic packaging SKUs with AI-powered chat interface",
 };
@@ -21,7 +21,7 @@ export default function RootLayout({
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
                 <h1 className="text-xl font-bold text-slate-900">
-                  Business Pro
+                  BusinessCase Pro
                 </h1>
               </div>
               <div className="flex items-center space-x-4">
