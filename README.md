@@ -1,4 +1,4 @@
-# Business Pro - Multi-SKU Financial Analysis Platform
+# BusinessCase Pro - Multi-SKU Financial Analysis Platform
 
 A comprehensive business analysis platform for plastic packaging pricing and returns, featuring multi-SKU support and advanced what-if analysis capabilities.
 
