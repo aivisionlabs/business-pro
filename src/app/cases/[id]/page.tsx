@@ -1,96 +1,67 @@
+"use client";
+
 import MultiSkuEditor from "@/components/MultiSkuEditor";
-import { BusinessCase as Scenario, PlantMaster } from "@/lib/types";
-import * as fs from "fs/promises";
-import * as path from "path";
+import { useBusinessCase, usePlantMaster } from "@/lib/hooks/useFirestore";
 import Link from "next/link";
+import { use } from "react";
 
-async function loadScenario(id: string): Promise<Scenario | null> {
-  try {
-    console.log("Loading scenario with ID:", id);
-
-    // Use direct file system access for server component
-    const SCENARIO_DIR = path.join(process.cwd(), "src/data/scenarios");
-    const file = path.join(SCENARIO_DIR, `${id}.json`);
-
-    try {
-      const raw = await fs.readFile(file, "utf-8");
-      const scenario = JSON.parse(raw) as Scenario;
-      console.log("Loaded scenario:", scenario.name);
-      return scenario;
-    } catch (fileError) {
-      console.error("File read error:", fileError);
-      return null;
-    }
-  } catch (error) {
-    console.error("Error loading scenario:", error);
-    return null;
-  }
-}
-
-async function loadPlantMasterData(): Promise<PlantMaster[]> {
-  try {
-    const plantMasterPath = path.join(
-      process.cwd(),
-      "src/data/plant-master.json"
-    );
-    const raw = await fs.readFile(plantMasterPath, "utf-8");
-    return JSON.parse(raw) as PlantMaster[];
-  } catch (error) {
-    console.error("Failed to load plant master data:", error);
-    // Provide a minimal fallback plant
-    return [
-      {
-        plant: "Default Plant",
-        manpowerRatePerShift: 500,
-        powerRatePerUnit: 7.0,
-        rAndMPerKg: 3.0,
-        otherMfgPerKg: 1.5,
-        plantSgaPerKg: 8.0,
-        corpSgaPerKg: 4.0,
-        conversionPerKg: 25.8,
-        sellingGeneralAndAdministrativeExpensesPerKg: 7.2,
-      },
-    ];
-  }
-}
-
-export default async function CaseDetail({
+export default function CaseDetail({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  console.log("CaseDetail: Received params with ID:", id);
+  const { id } = use(params);
+  const { businessCase: scenario, loading, error } = useBusinessCase(id);
+  const { plants, loading: plantsLoading } = usePlantMaster();
 
-  const scenario = await loadScenario(id);
-  console.log(
-    "CaseDetail: Loaded scenario:",
-    scenario ? scenario.name : "null"
-  );
-
-  if (!scenario) {
-    console.log("CaseDetail: Scenario not found, showing error page");
+  if (loading || plantsLoading) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-2xl font-semibold text-slate-900 mb-2">
-            Case not found
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="mx-auto max-w-9xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-slate-600">Loading case...</p>
           </div>
-          <Link href="/cases" className="text-blue-600">
-            Back to cases
-          </Link>
         </div>
       </main>
     );
   }
 
-  // Load plant master data with fallback
-  const plants = await loadPlantMasterData();
-  console.log("CaseDetail: Loaded", plants.length, "plants");
+  if (error) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="mx-auto max-w-9xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              <strong>Error:</strong> {error}
+            </div>
+            <Link href="/cases" className="text-blue-600 hover:underline">
+              Back to cases
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!scenario) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="mx-auto max-w-9xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="text-2xl font-semibold text-slate-900 mb-2">
+              Case not found
+            </div>
+            <Link href="/cases" className="text-blue-600 hover:underline">
+              Back to cases
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   // Note: charts are rendered inside MultiSkuEditor just above the debug panel
-
-  console.log("CaseDetail: Rendering page for scenario:", scenario.name);
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="mx-auto max-w-9xl px-4 py-8 sm:px-6 lg:px-8">
@@ -98,10 +69,10 @@ export default async function CaseDetail({
         <MultiSkuEditor scenario={scenario} plantOptions={plants} />
 
         {/* Link to Chat Page */}
-        <div className="mt-8 flex justify-end">
+        <div className="mt-8 text-center">
           <Link
-            href={`/cases/${scenario.id}/chat`}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+            href={`/cases/${id}/chat`}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Open Chat for this Case
           </Link>

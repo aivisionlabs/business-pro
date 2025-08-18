@@ -6,12 +6,13 @@ import {
   PlantMaster,
   Scenario,
 } from "@/lib/types";
-import plantMasterData from "@/data/plant-master.json" assert { type: "json" };
+import { plantMasterService } from "@/lib/firebase/firestore";
 import { nanoid } from "nanoid";
 import { ReadableStream } from "stream/web";
 import * as fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
+import { businessCaseService } from "@/lib/firebase/firestore";
 
 export const runtime = "nodejs";
 
@@ -33,20 +34,7 @@ type AgentRequest = {
   sessionId?: string;
 };
 
-// File-based persistence under src/data/scenarios
-const SCENARIO_DIR = path.join(process.cwd(), "src/data/scenarios");
-
-async function ensureScenarioDir() {
-  try {
-    log('DEBUG', 'Ensuring scenario directory exists', { path: SCENARIO_DIR });
-    await fs.mkdir(SCENARIO_DIR, { recursive: true });
-    log('INFO', 'Scenario directory ensured successfully');
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    log('ERROR', 'Failed to ensure scenario directory', { error: errorMessage, path: SCENARIO_DIR });
-    throw error;
-  }
-}
+// Firebase-based persistence - no need for local directory management
 
 // Support GOOGLE_APPLICATION_CREDENTIALS as path or raw JSON
 let cachedCredentialsPath: string | undefined;
@@ -128,68 +116,64 @@ async function ensureGoogleADCFromBase64(): Promise<void> {
 
 async function persistSaveScenario(scenario: Scenario): Promise<{ id: string }> {
   log('DEBUG', 'Persisting scenario', { scenarioId: scenario.id, scenarioName: scenario.name });
-  await ensureScenarioDir();
-  const now = new Date().toISOString();
-  const id = scenario.id || nanoid();
-  const file = path.join(SCENARIO_DIR, `${id}.json`);
-  const withMeta: Scenario = {
-    ...scenario,
-    id,
-    updatedAt: now,
-    createdAt: scenario.createdAt || now,
-  };
 
   try {
-    await fs.writeFile(file, JSON.stringify(withMeta, null, 2), "utf-8");
-    log('INFO', 'Scenario saved successfully', { id, file });
-    return { id };
+    if (scenario.id) {
+      // Update existing scenario
+      await businessCaseService.update(scenario.id, {
+        name: scenario.name,
+        finance: scenario.finance,
+        skus: scenario.skus,
+      });
+      log('INFO', 'Scenario updated successfully', { id: scenario.id });
+      return { id: scenario.id };
+    } else {
+      // Create new scenario
+      const newId = await businessCaseService.create({
+        name: scenario.name,
+        finance: scenario.finance,
+        skus: scenario.skus,
+      });
+      log('INFO', 'Scenario created successfully', { id: newId });
+      return { id: newId };
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    log('ERROR', 'Failed to save scenario', { error: errorMessage, id, file });
+    log('ERROR', 'Failed to save scenario', { error: errorMessage, id: scenario.id });
     throw error;
   }
 }
 
 async function persistLoadScenario(id: string): Promise<Scenario> {
   log('DEBUG', 'Loading scenario', { id });
-  const file = path.join(SCENARIO_DIR, `${id}.json`);
 
   try {
-    const raw = await fs.readFile(file, "utf-8");
-    const scenario = JSON.parse(raw) as Scenario;
+    const scenario = await businessCaseService.getById(id);
+    if (!scenario) {
+      throw new Error(`Scenario with ID ${id} not found`);
+    }
     log('INFO', 'Scenario loaded successfully', { id, name: scenario.name });
     return scenario;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    log('ERROR', 'Failed to load scenario', { error: errorMessage, id, file });
+    log('ERROR', 'Failed to load scenario', { error: errorMessage, id });
     throw error;
   }
 }
 
 async function persistListScenarios(): Promise<{ id: string; name: string; updatedAt: string }[]> {
   log('DEBUG', 'Listing scenarios');
-  await ensureScenarioDir();
 
   try {
-    const files = await fs.readdir(SCENARIO_DIR);
-    log('DEBUG', 'Found scenario files', { fileCount: files.length, files });
+    const businessCases = await businessCaseService.getAll();
+    const out = businessCases.map((bcase) => ({
+      id: bcase.id,
+      name: bcase.name,
+      updatedAt: bcase.updatedAt,
+    }));
 
-    const out: { id: string; name: string; updatedAt: string }[] = [];
-    for (const f of files) {
-      if (!f.endsWith(".json")) continue;
-      try {
-        const raw = await fs.readFile(path.join(SCENARIO_DIR, f), "utf-8");
-        const s = JSON.parse(raw) as Scenario;
-        out.push({ id: s.id, name: s.name, updatedAt: s.updatedAt });
-      } catch (parseError) {
-        const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
-        log('WARN', 'Failed to parse scenario file', { file: f, error: errorMessage });
-      }
-    }
-
-    const sorted = out.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    log('INFO', 'Scenarios listed successfully', { count: sorted.length });
-    return sorted;
+    log('INFO', 'Scenarios listed successfully', { count: out.length });
+    return out;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     log('ERROR', 'Failed to list scenarios', { error: errorMessage });
@@ -245,19 +229,19 @@ export function tool_calculateScenario(scenario: Scenario): CalcOutput {
   }
 }
 
-export function tool_getPlantMaster(plant?: string): PlantMaster | PlantMaster[] {
-  log('DEBUG', 'Getting plant master data', { plant, hasPlantData: !!plantMasterData });
+export async function tool_getPlantMaster(plant?: string): Promise<PlantMaster | PlantMaster[]> {
+  log('DEBUG', 'Getting plant master data', { plant });
 
   try {
-    const all = plantMasterData as unknown as PlantMaster[];
     if (!plant) {
+      const all = await plantMasterService.getAll();
       log('INFO', 'Returning all plant master data', { count: all.length });
       return all;
     }
 
-    const found = all.find((p) => p.plant === plant);
+    const found = await plantMasterService.getByPlant(plant);
     if (!found) {
-      log('WARN', 'Plant not found', { requestedPlant: plant, availablePlants: all.map(p => p.plant) });
+      log('WARN', 'Plant not found', { requestedPlant: plant });
       throw new Error("Plant not found");
     }
 
@@ -512,7 +496,7 @@ export async function tool_analyzePlantChange(args: { caseId: string; skuName: s
     }
 
     // Find the new plant
-    const newPlantData = plantMasterData.find(p => p.plant === args.newPlant);
+    const newPlantData = await plantMasterService.getByPlant(args.newPlant);
     if (!newPlantData) {
       throw new Error(`Plant ${args.newPlant} not found in plant master data`);
     }
@@ -873,7 +857,7 @@ export async function tool_compareScenarios(args: { baseCaseId: string; modifica
           setNestedValue(targetSku, parameterPath, newValue);
         } else if (change.type === 'plant') {
           const newPlant = change.details.newPlant as string;
-          const newPlantData = plantMasterData.find(p => p.plant === newPlant);
+          const newPlantData = await plantMasterService.getByPlant(newPlant);
           if (!newPlantData) {
             throw new Error(`Plant ${newPlant} not found in plant master data`);
           }

@@ -1,11 +1,8 @@
 import { NextRequest } from "next/server";
-import * as fs from "fs/promises";
-import * as path from "path";
+import { businessCaseService } from "@/lib/firebase/firestore";
 import { BusinessCase } from "@/lib/types";
 
 export const runtime = "nodejs";
-
-const SCENARIO_DIR = path.join(process.cwd(), "src/data/scenarios");
 
 export async function GET(
   _req: NextRequest,
@@ -13,19 +10,29 @@ export async function GET(
 ) {
   const resolvedParams = await params;
   const id = resolvedParams.id;
-  const file = path.join(SCENARIO_DIR, `${id}.json`);
+
   try {
-    const raw = await fs.readFile(file, "utf-8");
-    return new Response(raw, { headers: { "Content-Type": "application/json" } });
-  } catch {
-    return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+    const businessCase = await businessCaseService.getById(id);
+
+    if (!businessCase) {
+      return new Response(JSON.stringify({ error: "Scenario not found" }),
+        { status: 404 });
+    }
+
+    return new Response(JSON.stringify(businessCase),
+      { headers: { "Content-Type": "application/json" } });
+  } catch (error) {
+    console.error("Error fetching scenario:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to fetch scenario" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const id = resolvedParams.id;
-  const file = path.join(SCENARIO_DIR, `${id}.json`);
 
   try {
     // Validate request body
@@ -52,53 +59,47 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
 
-    // Ensure the directory exists
-    try {
-      await fs.mkdir(SCENARIO_DIR, { recursive: true });
-    } catch (dirError) {
-      console.error("Failed to create directory:", dirError);
-      return new Response(
-        JSON.stringify({ error: "Failed to create directory" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const now = new Date().toISOString();
-    const scenario: BusinessCase = {
-      ...input,
-      id,
-      updatedAt: now,
-      createdAt: input.createdAt || now
+    // Update the business case in Firebase
+    const updates: Partial<BusinessCase> = {
+      name: input.name,
+      finance: input.finance,
+      skus: input.skus,
     };
 
-    // Write the file with proper formatting
-    await fs.writeFile(file, JSON.stringify(scenario, null, 2), "utf-8");
+    await businessCaseService.update(id, updates);
 
-    // Verify the file was written successfully
-    try {
-      await fs.access(file);
-      const stats = await fs.stat(file);
-      if (stats.size === 0) {
-        throw new Error("File is empty after write");
-      }
-    } catch (verifyError) {
-      console.error("File verification failed:", verifyError);
-      return new Response(
-        JSON.stringify({ error: "File verification failed after save" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log(`Successfully saved scenario ${id} to ${file}`);
-    return new Response(
-      JSON.stringify({ ok: true, id, updatedAt: now }),
-      { headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true }),
+      { headers: { "Content-Type": "application/json" } });
   } catch (error) {
-    console.error("Error saving scenario:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error updating scenario:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to save scenario", details: errorMessage }),
+      JSON.stringify({
+        error: "Failed to update scenario",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
+
+  try {
+    await businessCaseService.delete(id);
+    return new Response(JSON.stringify({ success: true }),
+      { headers: { "Content-Type": "application/json" } });
+  } catch (error) {
+    console.error("Error deleting scenario:", error);
+    return new Response(
+      JSON.stringify({
+        error: "Failed to delete scenario",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }

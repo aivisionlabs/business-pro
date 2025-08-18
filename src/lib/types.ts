@@ -91,6 +91,7 @@ export type AltConversionInput = {
 // A single SKU within a business case
 export type Sku = {
   id: string;
+  businessCaseId?: string; // Reference to parent business case (for Firestore relationships)
   name: string;
   sales: SalesInput;
   npd: NpdInput;

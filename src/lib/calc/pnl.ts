@@ -60,23 +60,12 @@ export function buildPnlForSku(
     const corpSgaCost = (finance.includeCorpSGA ? plantMaster.corpSgaPerKg : 0) * weightKg;
     const sgaCost = plantMaster.sellingGeneralAndAdministrativeExpensesPerKg * weightKg;
 
-    // Debug logging for conversion cost calculation
-    console.log('=== Conversion Cost Debug ===');
-    console.log('plantMaster.conversionPerKg:', plantMaster.conversionPerKg);
-    console.log('weightKg:', weightKg);
-    console.log('plantMaster.conversionPerKg * weightKg:', plantMaster.conversionPerKg * weightKg);
-
     // Use fallback value if conversionPerKg is not available
     const conversionPerKg = plantMaster.conversionPerKg ?? 25.80; // Default fallback value
-    console.log('Using conversionPerKg (with fallback):', conversionPerKg);
-    console.log('conversionPerKg * weightKg:', conversionPerKg * weightKg);
 
     const conversionCost =
 
       conversionPerKg * weightKg;
-
-    console.log('Final conversionCost:', conversionCost);
-    console.log('=== End Debug ===');
 
     const grossMargin = materialMargin - conversionCost;
     const ebitda = revenueNet - materialCost - conversionCost - sgaCost;

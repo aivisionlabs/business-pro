@@ -1,101 +1,69 @@
 "use client";
-import { useEffect, useState } from "react";
 
-// Client-side only date component to avoid hydration mismatches
-function ClientOnlyDate({
-  date,
-  format = "en-GB",
-}: {
-  date: string | Date;
-  format?: string;
-}) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    // Return a placeholder during SSR to avoid hydration mismatch
-    return <span className="text-xs text-slate-500">Loading...</span>;
-  }
-
-  try {
-    const dateObj = new Date(date);
-    if (isNaN(dateObj.getTime())) {
-      return <span className="text-xs text-slate-500">Invalid date</span>;
-    }
-
-    return (
-      <span className="text-xs text-slate-500">
-        Updated{" "}
-        {dateObj.toLocaleString(format, {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false,
-        })}
-      </span>
-    );
-  } catch {
-    return (
-      <span className="text-xs text-slate-500">Error formatting date</span>
-    );
-  }
-}
-
-type CaseMeta = { id: string; name: string; updatedAt: string };
+import { useState } from "react";
+import { useBusinessCases } from "@/lib/hooks/useFirestore";
+import Link from "next/link";
 
 export default function CasesPage() {
-  const [cases, setCases] = useState<CaseMeta[]>([]);
+  const { businessCases, loading, error } = useBusinessCases();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
 
-  async function refresh() {
-    const res = await fetch("/api/scenarios", { cache: "no-store" });
-    if (!res.ok) return;
-    const data = (await res.json()) as CaseMeta[];
-    setCases(data);
-  }
-
-  useEffect(() => {
-    refresh();
-  }, []);
-
-  async function createCase() {
+  async function handleCreateCase() {
     if (!name.trim()) return;
     setCreating(true);
     try {
+      // Use the API route instead of the hook directly to avoid type issues
       const res = await fetch("/api/scenarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name: name.trim() }),
       });
 
       if (!res.ok) {
-        console.error("Failed to create case:", res.status, res.statusText);
-        return;
+        throw new Error("Failed to create case");
       }
 
-      const { id } = (await res.json()) as { id: string };
-      console.log("Created case with ID:", id);
+      const { id: newId } = await res.json();
 
       // Clear the input
       setName("");
 
-      // Wait a moment for the file to be written, then redirect
-      setTimeout(() => {
-        console.log("Redirecting to case:", id);
-        window.location.href = `/cases/${id}`;
-      }, 200);
+      // Redirect to the new case
+      window.location.href = `/cases/${newId}`;
     } catch (error) {
       console.error("Error creating case:", error);
+      alert("Failed to create case. Please try again.");
     } finally {
       setCreating(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="mx-auto max-w-4xl px-4 py-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-slate-600">Loading cases...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="mx-auto max-w-4xl px-4 py-10">
+          <div className="text-center">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              <strong>Error:</strong> {error}
+            </div>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -118,55 +86,57 @@ export default function CasesPage() {
               placeholder="Enter case name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleCreateCase()}
             />
             <button
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white disabled:bg-slate-400"
+              className="px-4 py-2 rounded-lg bg-blue-600 text-white disabled:bg-slate-400 hover:bg-blue-700 transition-colors"
               disabled={!name.trim() || creating}
-              onClick={createCase}
+              onClick={handleCreateCase}
             >
-              Create
+              {creating ? "Creating..." : "Create"}
             </button>
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900 mb-3">
-            Your cases
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">
+            Your cases ({businessCases.length})
           </h2>
-          {cases.length === 0 ? (
-            <div className="text-slate-500 text-sm">
-              No cases yet. Create one above.
+
+          {businessCases.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">
+              <p>No business cases yet. Create your first one above!</p>
             </div>
           ) : (
-            <ul className="divide-y divide-slate-200">
-              {cases.map((c) => (
-                <li
-                  key={c.id}
-                  className="py-3 flex items-center justify-between"
+            <div className="space-y-3">
+              {businessCases.map((businessCase) => (
+                <Link
+                  key={businessCase.id}
+                  href={`/cases/${businessCase.id}`}
+                  className="block p-4 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
                 >
-                  <div>
-                    <div className="font-medium text-slate-900">{c.name}</div>
-                    <div suppressHydrationWarning>
-                      <ClientOnlyDate date={c.updatedAt} />
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-medium text-slate-900">
+                        {businessCase.name}
+                      </h3>
+                      <p className="text-sm text-slate-500">
+                        {businessCase.skus?.length || 0} SKU
+                        {businessCase.skus?.length !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-slate-400">
+                        {new Date(businessCase.updatedAt).toLocaleDateString()}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {new Date(businessCase.updatedAt).toLocaleTimeString()}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <a
-                      className="px-3 py-1.5 rounded-md bg-blue-600 text-white text-sm"
-                      href={`/cases/${c.id}/chat`}
-                    >
-                      Open Chat
-                    </a>
-                    <a
-                      className="px-3 py-1.5 rounded-md bg-slate-900 text-white text-sm"
-                      href={`/cases/${c.id}`}
-                    >
-                      Edit
-                    </a>
-                  </div>
-                </li>
+                </Link>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </div>

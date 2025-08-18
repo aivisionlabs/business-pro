@@ -123,6 +123,9 @@ export default function MultiSkuEditor({
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(
+    null
+  );
   const activeSkuIndex = Math.max(
     0,
     scenario.skus.findIndex((s) => s.id === activeSkuId)
@@ -138,6 +141,15 @@ export default function MultiSkuEditor({
       return () => clearTimeout(timer);
     }
   }, [saveMessage]);
+
+  // Cleanup auto-save timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+    };
+  }, [autoSaveTimer]);
 
   const calc = useMemo(() => calculateScenario(scenario), [scenario]);
 
@@ -197,13 +209,41 @@ export default function MultiSkuEditor({
       copy.skus[activeSkuIndex] = updater(copy.skus[activeSkuIndex]);
       return copy;
     });
+
+    // Debounced auto-save
+    if (autoSaveTimer) {
+      clearTimeout(autoSaveTimer);
+    }
+    const timer = setTimeout(() => {
+      handleSave();
+    }, 2000); // Auto-save after 2 seconds of inactivity
+    setAutoSaveTimer(timer);
   }
 
-  function addSku() {
+  function updateFinance(
+    updater: (f: typeof scenario.finance) => typeof scenario.finance
+  ) {
+    setScenario((prev) => ({
+      ...prev,
+      finance: updater(prev.finance),
+    }));
+
+    // Debounced auto-save for finance changes
+    if (autoSaveTimer) {
+      clearTimeout(autoSaveTimer);
+    }
+    const timer = setTimeout(() => {
+      handleSave();
+    }, 2000);
+    setAutoSaveTimer(timer);
+  }
+
+  async function addSku() {
     const id = nanoid(6);
     const base = scenario.skus[0];
     const next: Sku = {
       id,
+      businessCaseId: scenario.id, // Set the business case ID
       name: `SKU-${scenario.skus.length + 1}`,
       sales: {
         ...base.sales,
@@ -218,23 +258,55 @@ export default function MultiSkuEditor({
       altConversion: { ...base.altConversion },
       plantMaster: { ...base.plantMaster },
     };
+
+    // Update local state first
     setScenario((prev) => ({ ...prev, skus: [...prev.skus, next] }));
     setActiveSkuId(id);
+
+    // Auto-save to Firestore
+    try {
+      await handleSave();
+    } catch (error) {
+      console.error("Failed to auto-save after SKU addition:", error);
+      // Revert the addition if save fails
+      setScenario((prev) => ({
+        ...prev,
+        skus: prev.skus.filter((s) => s.id !== id),
+      }));
+      setActiveSkuId(activeSkuId);
+      alert("Failed to save changes. SKU addition was reverted.");
+    }
   }
 
-  function deleteActiveSku() {
+  async function deleteActiveSku() {
     if (scenario.skus.length <= 1) {
       alert("At least one SKU is required in a case.");
       return;
     }
     const skuName = sku.name || sku.id;
     if (!confirm(`Delete SKU "${skuName}"? This cannot be undone.`)) return;
+
+    // Update local state first
     setScenario((prev) => {
       const filtered = prev.skus.filter((s) => s.id !== activeSkuId);
       const nextActive = filtered[0]?.id || "";
       setActiveSkuId(nextActive);
       return { ...prev, skus: filtered };
     });
+
+    // Auto-save to Firestore
+    try {
+      await handleSave();
+    } catch (error) {
+      console.error("Failed to auto-save after SKU deletion:", error);
+      // Revert the deletion if save fails
+      setScenario((prev) => ({
+        ...prev,
+        skus: [...prev.skus, sku],
+      }));
+      setActiveSkuId(activeSkuId);
+      alert("Failed to save changes. SKU deletion was reverted.");
+    }
   }
 
   async function handleSave() {
@@ -256,7 +328,7 @@ export default function MultiSkuEditor({
       }
 
       const result = await response.json();
-      if (result.ok) {
+      if (result.success) {
         setSaveMessage({ type: "success", text: "Case saved successfully!" });
       } else {
         throw new Error("Save failed");
@@ -283,14 +355,14 @@ export default function MultiSkuEditor({
         </div>
         <button
           onClick={handleSave}
-          disabled={isSaving}
+          disabled={isSaving || !!autoSaveTimer}
           className={`px-4 py-2 rounded-lg text-white shadow transition-colors ${
-            isSaving
+            isSaving || autoSaveTimer
               ? "bg-blue-400 cursor-not-allowed"
               : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
-          {isSaving ? "Saving..." : "Save"}
+          {isSaving ? "Saving..." : autoSaveTimer ? "Auto-saving..." : "Save"}
         </button>
       </div>
 

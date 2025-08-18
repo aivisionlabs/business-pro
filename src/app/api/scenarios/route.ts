@@ -1,44 +1,37 @@
 import { NextRequest } from "next/server";
-import * as fs from "fs/promises";
-import * as path from "path";
-import { nanoid } from "nanoid";
+import { businessCaseService } from "@/lib/firebase/firestore";
 import { BusinessCase, Sku } from "@/lib/types";
 
 export const runtime = "nodejs";
 
-const SCENARIO_DIR = path.join(process.cwd(), "src/data/scenarios");
-
-async function ensureDir() {
-  try {
-    await fs.mkdir(SCENARIO_DIR, { recursive: true });
-  } catch { }
-}
-
 export async function GET() {
-  await ensureDir();
-  const files = await fs.readdir(SCENARIO_DIR);
-  const out: { id: string; name: string; updatedAt: string }[] = [];
-  for (const f of files) {
-    if (!f.endsWith(".json")) continue;
-    try {
-      const raw = await fs.readFile(path.join(SCENARIO_DIR, f), "utf-8");
-      const s = JSON.parse(raw) as BusinessCase;
-      out.push({ id: s.id, name: s.name, updatedAt: s.updatedAt });
-    } catch { }
+  try {
+    const businessCases = await businessCaseService.getAll();
+
+    // Return only metadata for the list view
+    const caseMeta = businessCases.map((bcase) => ({
+      id: bcase.id,
+      name: bcase.name,
+      updatedAt: bcase.updatedAt,
+    }));
+
+    return new Response(JSON.stringify(caseMeta),
+      { headers: { "Content-Type": "application/json" } });
+  } catch (error) {
+    console.error("Error fetching scenarios:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to fetch scenarios" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
-  out.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  return new Response(JSON.stringify(out), { headers: { "Content-Type": "application/json" } });
 }
 
 export async function POST(req: NextRequest) {
-  await ensureDir();
   try {
     const input = (await req.json()) as Partial<BusinessCase> & { name: string };
-    const now = new Date().toISOString();
-    const id = input.id || nanoid();
-    const file = path.join(SCENARIO_DIR, `${id}.json`);
-    const defaultSku: Sku = {
-      id: nanoid(6),
+
+    const defaultSku: Omit<Sku, 'id'> = {
+      businessCaseId: '', // Will be set after creation
       name: "SKU-1",
       sales: {
         customer: "",
@@ -105,11 +98,8 @@ export async function POST(req: NextRequest) {
       altConversion: {},
     };
 
-    const scenario: BusinessCase = {
-      id,
-      name: input.name || `Case-${id}`,
-      createdAt: input.createdAt || now,
-      updatedAt: now,
+    const businessCaseData: Omit<BusinessCase, 'id' | 'createdAt' | 'updatedAt'> = {
+      name: input.name || `Case-${Date.now()}`,
       finance: input.finance || {
         includeCorpSGA: true,
         debtPct: 0,
@@ -117,24 +107,22 @@ export async function POST(req: NextRequest) {
         costOfEquityPct: 0,
         corporateTaxRatePct: 0.25,
       },
-      skus: input.skus && input.skus.length ? input.skus : [defaultSku],
+      skus: [defaultSku as Sku], // Type assertion since we'll add ID after creation
     };
 
-    // Write the file and ensure it's completed
-    await fs.writeFile(file, JSON.stringify(scenario, null, 2), "utf-8");
+    // Create the business case in Firebase
+    const newId = await businessCaseService.create(businessCaseData);
 
-    // Verify the file was written
-    try {
-      await fs.access(file);
-    } catch {
-      throw new Error("File write verification failed");
-    }
-
-    return new Response(JSON.stringify({ id }), { headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ id: newId }), {
+      headers: { "Content-Type": "application/json" }
+    });
   } catch (error) {
     console.error("Error creating scenario:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to create scenario", details: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({
+        error: "Failed to create scenario",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
