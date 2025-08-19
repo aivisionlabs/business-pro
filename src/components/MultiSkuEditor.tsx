@@ -986,11 +986,42 @@ export default function MultiSkuEditor({
                             : 0;
                         },
                       ],
-                      // [
-                      //   "EBIT",
-                      //   (i: number) =>
-                      //     calc.weightedAvgPricePerKg[i]?.ebitPerKg || 0,
-                      // ],
+                      [
+                        "EBIT",
+                        (i: number) => {
+                          const ebitda =
+                            calc.weightedAvgPricePerKg[i]?.ebitdaPerKg || 0;
+                          // Calculate total depreciation amount across all SKUs for this year
+                          const bySku = calc.bySku || [];
+                          let totalDepreciationAmount = 0;
+                          let totalWeight = 0;
+
+                          for (const s of bySku) {
+                            const vkg = s.volumes[i]?.weightKg || 0;
+                            if (vkg > 0) {
+                              // Find the corresponding SKU in scenario to get ops data
+                              const sku = scenario.skus.find(
+                                (sku) => sku.id === s.skuId
+                              );
+                              if (sku) {
+                                const skuDepreciation =
+                                  calculateTotalDepreciation(sku);
+                                // Add the total depreciation amount (not multiplied by weight)
+                                totalDepreciationAmount += skuDepreciation;
+                                totalWeight += vkg;
+                              }
+                            }
+                          }
+
+                          // Depreciation per kg = Total depreciation amount / Total weight
+                          const depreciationPerKg =
+                            totalWeight > 0
+                              ? totalDepreciationAmount / totalWeight
+                              : 0;
+
+                          return ebitda - depreciationPerKg;
+                        },
+                      ],
                       // [
                       //   "PBT",
                       //   (i: number) =>
@@ -1075,7 +1106,20 @@ export default function MultiSkuEditor({
                           }, 0);
                         },
                       ],
-                      // ["EBIT", (y: (typeof calc.pnl)[number]) => y.ebit],
+                      [
+                        "EBIT",
+                        (y: (typeof calc.pnl)[number]) => {
+                          const ebitda = y.ebitda;
+                          // Calculate total depreciation across all SKUs for this year
+                          const depreciation = scenario.skus.reduce(
+                            (total, sku) => {
+                              return total + calculateTotalDepreciation(sku);
+                            },
+                            0
+                          );
+                          return ebitda - depreciation;
+                        },
+                      ],
                       // ["PBT", (y: (typeof calc.pnl)[number]) => y.pbt],
                       // ["PAT", (y: (typeof calc.pnl)[number]) => y.pat],
                     ] as const
