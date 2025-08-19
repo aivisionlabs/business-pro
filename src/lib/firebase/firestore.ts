@@ -11,9 +11,6 @@ import {
   orderBy,
   limit,
   writeBatch,
-  Timestamp,
-  DocumentData,
-  QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { db } from './config';
 import { BusinessCase, Sku, PlantMaster } from '@/lib/types';

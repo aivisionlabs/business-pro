@@ -29,7 +29,6 @@ Authoritative spec is aligned to the workbook discussion captured here: [Workboo
 - `discountRsPerPiece` (booked as expense in P&L)
 - `freightOutSalesRsPerPiece` (customer freight, booked as expense in P&L)
 - `baseAnnualVolumePieces`
-- `yoyGrowthPct[5]` (Y1 typically 0, Y2..Y5 growth)
 - `inflationPassThrough` (Yes/No)
 
 ### NPD
@@ -71,7 +70,7 @@ Authoritative spec is aligned to the workbook discussion captured here: [Workboo
 - Capacity warning if planned Y1 volume > annual capacity.
 
 ## Volumes and weights
-- Growth factor: \(\text{growthFactor}(1) = 1\); for t > 1: \(\prod_{y=2}^{t} (1 + \text{yoyGrowthPct}[y])\)
+- Growth factor: \(\text{growthFactor}(1) = 1\); for t > 1: \(\prod_{y=2}^{t}
 - Volume pieces: \(\text{volumePieces}(t) = \text{baseVolume} \times \text{growthFactor}(t)\)
 - Weight kg: \(\text{weightKg}(t) = \text{volumePieces}(t) \times \text{productWeightKg}\)
 
@@ -92,7 +91,6 @@ Authoritative spec is aligned to the workbook discussion captured here: [Workboo
 - Value add per kg: \(\frac{\text{valueAddRsPerPiece}}{\text{productWeightKg}}\)
 - Packaging per kg: \(\frac{\text{packagingRsPerPiece}}{\text{productWeightKg}}\)
 - Freight out per kg: \(\frac{\text{freightOutRsPerPiece}}{\text{productWeightKg}}\)
-- Mould amort per kg: \(\frac{\text{mouldAmortizationRsPerPiece}}{\text{productWeightKg}}\)
 - Conversion per kg: \(\frac{\text{conversionRecoveryRsPerPiece}}{\text{productWeightKg}}\) (see alternate conversion below)
 
 ### Totals (Y1)

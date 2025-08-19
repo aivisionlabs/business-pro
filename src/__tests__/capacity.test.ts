@@ -154,9 +154,8 @@ describe('Capacity Calculations', () => {
     it('should calculate volumes correctly with growth rates', () => {
       const productWeightGrams = 100; // 0.1 kg
       const baseAnnualVolumePieces = 10000;
-      const yoyGrowthPct = [0, 0.1, 0.15, 0.2, 0.25]; // 0%, 10%, 15%, 20%, 25%
 
-      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces, yoyGrowthPct);
+      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces);
 
       expect(result).toHaveLength(5);
 
@@ -189,9 +188,8 @@ describe('Capacity Calculations', () => {
     it('should handle zero growth rates', () => {
       const productWeightGrams = 200; // 0.2 kg
       const baseAnnualVolumePieces = 5000;
-      const yoyGrowthPct = [0, 0, 0, 0, 0]; // No growth
 
-      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces, yoyGrowthPct);
+      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces);
 
       expect(result).toHaveLength(5);
 
@@ -205,9 +203,8 @@ describe('Capacity Calculations', () => {
     it('should handle negative growth rates', () => {
       const productWeightGrams = 150; // 0.15 kg
       const baseAnnualVolumePieces = 8000;
-      const yoyGrowthPct = [0, -0.1, -0.15, -0.2, -0.25]; // Declining volumes
 
-      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces, yoyGrowthPct);
+      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces);
 
       expect(result).toHaveLength(5);
 
@@ -226,42 +223,40 @@ describe('Capacity Calculations', () => {
 
     it('should handle different product weights', () => {
       const baseAnnualVolumePieces = 10000;
-      const yoyGrowthPct = [0, 0.05, 0.05, 0.05, 0.05];
 
       // Light product
-      const lightResult = computeVolumes(10, baseAnnualVolumePieces, yoyGrowthPct);
+      const lightResult = computeVolumes(10, baseAnnualVolumePieces);
       expect(lightResult[0].weightKg).toBe(100); // 10000 * 0.01kg (10g = 0.01kg)
 
       // Heavy product
-      const heavyResult = computeVolumes(1000, baseAnnualVolumePieces, yoyGrowthPct);
+      const heavyResult = computeVolumes(1000, baseAnnualVolumePieces);
       expect(heavyResult[0].weightKg).toBe(10000); // 10000 * 1kg (1000g = 1kg)
 
       // Very heavy product
-      const veryHeavyResult = computeVolumes(10000, baseAnnualVolumePieces, yoyGrowthPct);
+      const veryHeavyResult = computeVolumes(10000, baseAnnualVolumePieces);
       expect(veryHeavyResult[0].weightKg).toBe(100000); // 10000 * 10kg (10000g = 10kg)
     });
 
     it('should handle edge cases', () => {
       // Zero base volume
-      const zeroVolumeResult = computeVolumes(100, 0, [0, 0.1, 0.15, 0.2, 0.25]);
+      const zeroVolumeResult = computeVolumes(100, 0);
       expect(zeroVolumeResult[0].volumePieces).toBe(0);
       expect(zeroVolumeResult[0].weightKg).toBe(0);
 
       // Zero product weight
-      const zeroWeightResult = computeVolumes(0, 10000, [0, 0.1, 0.15, 0.2, 0.25]);
+      const zeroWeightResult = computeVolumes(0, 10000);
       expect(zeroWeightResult[0].weightKg).toBe(0);
 
       // Very small product weight
-      const tinyWeightResult = computeVolumes(0.001, 10000, [0, 0.1, 0.15, 0.2, 0.25]);
+      const tinyWeightResult = computeVolumes(0.001, 10000);
       expect(tinyWeightResult[0].weightKg).toBe(0.01); // 10000 * 0.000001kg
     });
 
     it('should handle missing growth rates', () => {
       const productWeightGrams = 100;
       const baseAnnualVolumePieces = 10000;
-      const yoyGrowthPct = [0, 0.1]; // Only 2 years specified
 
-      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces, yoyGrowthPct);
+      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces);
 
       expect(result).toHaveLength(5);
 
@@ -276,9 +271,8 @@ describe('Capacity Calculations', () => {
     it('should maintain precision for large numbers', () => {
       const productWeightGrams = 100;
       const baseAnnualVolumePieces = 1000000; // 1 million pieces
-      const yoyGrowthPct = [0, 0.05, 0.05, 0.05, 0.05];
 
-      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces, yoyGrowthPct);
+      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces);
 
       expect(result[0].volumePieces).toBe(1000000);
       expect(result[0].weightKg).toBe(100000); // 1 million * 0.1kg

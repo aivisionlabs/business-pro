@@ -68,7 +68,6 @@
 //     discountRsPerPiece: 0.02,
 //     freightOutSalesRsPerPiece: 0.03,
 //     baseAnnualVolumePieces: 12000000,
-//     yoyGrowthPct: [0, 0.05, 0.08, 0.12, 0.15],
 //     inflationPassThrough: true,
 //   },
 //   npd: {

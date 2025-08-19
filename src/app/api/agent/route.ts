@@ -1111,12 +1111,9 @@ function resolveParameterPath(parameter: string): string {
     // Sales parameters
     'baseAnnualVolumePieces': 'sales.baseAnnualVolumePieces',
     'conversionRecoveryRsPerPiece': 'sales.conversionRecoveryRsPerPiece',
-    'mouldAmortizationRsPerPiece': 'sales.mouldAmortizationRsPerPiece',
     'discountRsPerPiece': 'sales.discountRsPerPiece',
     'freightOutSalesRsPerPiece': 'sales.freightOutSalesRsPerPiece',
     'productWeightGrams': 'sales.productWeightGrams',
-    'yoyGrowthPct': 'sales.yoyGrowthPct',
-    'inflationPassThrough': 'sales.inflationPassThrough',
 
     // Costing parameters
     'resinRsPerKg': 'costing.resinRsPerKg',

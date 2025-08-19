@@ -11,7 +11,6 @@ export function buildPnlForSku(
   const volumes = computeVolumes(
     sales.productWeightGrams,
     sales.baseAnnualVolumePieces,
-    [0, 0, 0, 0, 0] // Default: no growth for all years
   );
 
   const powerRate = plantMaster.powerRatePerUnit;

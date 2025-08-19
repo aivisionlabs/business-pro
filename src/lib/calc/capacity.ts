@@ -13,16 +13,12 @@ export function computeCapacity(npd: NpdInput, ops: OpsInput) {
 export function computeVolumes(
   productWeightGrams: number,
   baseAnnualVolumePieces: number,
-  yoyGrowthPct: number[]
 ): YearVolumes[] {
   const productWeightKg = toKg(productWeightGrams);
   const years = 5;
   const results: YearVolumes[] = [];
-  let cumulative = 1;
   for (let year = 1; year <= years; year += 1) {
-    const idx = year - 1;
-    if (idx > 0) cumulative *= 1 + (yoyGrowthPct[idx] || 0);
-    const volumePieces = baseAnnualVolumePieces * cumulative;
+    const volumePieces = baseAnnualVolumePieces;
     const weightKg = volumePieces * productWeightKg;
     results.push({ year, volumePieces, weightKg });
   }

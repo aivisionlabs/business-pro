@@ -230,6 +230,14 @@ export default function MultiSkuEditor({
     setScenario((prev) => {
       const copy = { ...prev, skus: prev.skus.map((x) => ({ ...x })) };
       copy.skus[activeSkuIndex] = updater(copy.skus[activeSkuIndex]);
+
+      // Debug: Log the updated sales data
+      console.log(
+        "updateSku - Updated sales data:",
+        copy.skus[activeSkuIndex].sales
+      );
+      console.log("updateSku - Full scenario state:", copy);
+
       return copy;
     });
 
@@ -238,26 +246,13 @@ export default function MultiSkuEditor({
       clearTimeout(autoSaveTimer);
     }
     const timer = setTimeout(() => {
-      handleSave();
+      console.log("Auto-save timer triggered, calling handleSave");
+      // Use functional approach to get latest state
+      setScenario((latestScenario) => {
+        handleSaveWithScenario(latestScenario);
+        return latestScenario; // Return unchanged state
+      });
     }, 2000); // Auto-save after 2 seconds of inactivity
-    setAutoSaveTimer(timer);
-  }
-
-  function updateFinance(
-    updater: (f: typeof scenario.finance) => typeof scenario.finance
-  ) {
-    setScenario((prev) => ({
-      ...prev,
-      finance: updater(prev.finance),
-    }));
-
-    // Debounced auto-save for finance changes
-    if (autoSaveTimer) {
-      clearTimeout(autoSaveTimer);
-    }
-    const timer = setTimeout(() => {
-      handleSave();
-    }, 2000);
     setAutoSaveTimer(timer);
   }
 
@@ -286,7 +281,7 @@ export default function MultiSkuEditor({
 
     // Auto-save to Firestore
     try {
-      await handleSave();
+      await handleSaveWithScenario(scenario);
     } catch (error) {
       console.error("Failed to auto-save after SKU addition:", error);
       // Revert the addition if save fails
@@ -317,7 +312,7 @@ export default function MultiSkuEditor({
 
     // Auto-save to Firestore
     try {
-      await handleSave();
+      await handleSaveWithScenario(scenario);
     } catch (error) {
       console.error("Failed to auto-save after SKU deletion:", error);
       // Revert the deletion if save fails
@@ -330,25 +325,42 @@ export default function MultiSkuEditor({
     }
   }
 
-  async function handleSave() {
+  async function handleSaveWithScenario(scenarioToSave: Scenario) {
     setIsSaving(true);
     setSaveMessage(null);
 
     try {
-      const response = await fetch(`/api/scenarios/${scenario.id}`, {
+      // Debug: Log the data being sent
+      console.log(
+        "handleSaveWithScenario - Data being sent to API:",
+        scenarioToSave
+      );
+      console.log(
+        "handleSaveWithScenario - Sales data in first SKU:",
+        scenarioToSave.skus[0]?.sales
+      );
+
+      const response = await fetch(`/api/scenarios/${scenarioToSave.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scenario),
+        body: JSON.stringify(scenarioToSave),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error(
+          "handleSaveWithScenario - API response not OK:",
+          response.status,
+          errorData
+        );
         throw new Error(
           errorData.error || `Save failed with status: ${response.status}`
         );
       }
 
       const result = await response.json();
+      console.log("handleSaveWithScenario - API response success:", result);
+
       if (result.success) {
         setSaveMessage({ type: "success", text: "Case saved successfully!" });
       } else {
@@ -363,6 +375,33 @@ export default function MultiSkuEditor({
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function handleSave() {
+    // Call the new function with current scenario state
+    await handleSaveWithScenario(scenario);
+  }
+
+  function updateFinance(
+    updater: (f: typeof scenario.finance) => typeof scenario.finance
+  ) {
+    setScenario((prev) => ({
+      ...prev,
+      finance: updater(prev.finance),
+    }));
+
+    // Debounced auto-save for finance changes
+    if (autoSaveTimer) {
+      clearTimeout(autoSaveTimer);
+    }
+    const timer = setTimeout(() => {
+      // Use functional approach to get latest state
+      setScenario((latestScenario) => {
+        handleSaveWithScenario(latestScenario);
+        return latestScenario; // Return unchanged state
+      });
+    }, 2000);
+    setAutoSaveTimer(timer);
   }
 
   return (
