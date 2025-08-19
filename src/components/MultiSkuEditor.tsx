@@ -139,6 +139,12 @@ export default function MultiSkuEditor({
 
     if (updatedScenario.finance) {
       const originalFinance = updatedScenario.finance;
+      console.log(`Initial finance values:`, {
+        original: originalFinance,
+        debtPct: originalFinance.debtPct,
+        costOfDebtPct: originalFinance.costOfDebtPct,
+        corporateTaxRatePct: originalFinance.corporateTaxRatePct,
+      });
       updatedScenario.finance = {
         includeCorpSGA: originalFinance.includeCorpSGA ?? true,
         debtPct: originalFinance.debtPct ?? 0,
@@ -146,7 +152,12 @@ export default function MultiSkuEditor({
         costOfEquityPct: originalFinance.costOfEquityPct ?? 0,
         corporateTaxRatePct: originalFinance.corporateTaxRatePct ?? 0.25, // Default to 25%
       };
-
+      console.log(`Updated finance values:`, {
+        updated: updatedScenario.finance,
+        debtPct: updatedScenario.finance.debtPct,
+        costOfDebtPct: updatedScenario.finance.costOfDebtPct,
+        corporateTaxRatePct: updatedScenario.finance.corporateTaxRatePct,
+      });
       // Check if any defaults were applied
       if (
         originalFinance.corporateTaxRatePct === undefined ||
@@ -155,6 +166,31 @@ export default function MultiSkuEditor({
       ) {
         needsSave = true;
       }
+    }
+
+    // Set default working capital days for SKUs if not already set
+    if (updatedScenario.skus) {
+      updatedScenario.skus = updatedScenario.skus.map((sku) => {
+        if (
+          sku.capex &&
+          (sku.capex.workingCapitalDays === undefined ||
+            sku.capex.workingCapitalDays === null ||
+            sku.capex.workingCapitalDays === 0)
+        ) {
+          console.log(
+            `Setting default working capital days for SKU ${sku.name}: 60 days`
+          );
+          needsSave = true;
+          return {
+            ...sku,
+            capex: {
+              ...sku.capex,
+              workingCapitalDays: 60,
+            },
+          };
+        }
+        return sku;
+      });
     }
 
     setScenario(updatedScenario);
@@ -475,6 +511,22 @@ export default function MultiSkuEditor({
         <div className="xl:col-span-3 space-y-4">
           {/* Finance Inputs */}
           <Section title="💰 Finance Inputs">
+            {/* Debug display of current finance values */}
+            <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
+              <div className="font-medium">Debug - Current Finance Values:</div>
+              <div>
+                Debt %: {scenario.finance.debtPct} (
+                {scenario.finance.debtPct * 100}%)
+              </div>
+              <div>
+                Cost of Debt %: {scenario.finance.costOfDebtPct} (
+                {scenario.finance.costOfDebtPct * 100}%)
+              </div>
+              <div>
+                Tax Rate %: {scenario.finance.corporateTaxRatePct} (
+                {scenario.finance.corporateTaxRatePct * 100}%)
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <LabeledInput
                 label="Tax Rate (%)"
@@ -511,6 +563,11 @@ export default function MultiSkuEditor({
                 value={scenario.finance.debtPct * 100}
                 onChange={(v) => {
                   const newDebtPct = Number(v) / 100;
+                  console.log(`Debt Percentage input changed:`, {
+                    inputValue: v,
+                    calculatedDebtPct: newDebtPct,
+                    oldDebtPct: scenario.finance.debtPct,
+                  });
                   setScenario((s) => ({
                     ...s,
                     finance: {
@@ -525,6 +582,10 @@ export default function MultiSkuEditor({
                   }
                   const timer = setTimeout(() => {
                     setScenario((latestScenario) => {
+                      console.log(
+                        `Auto-saving with new debt percentage:`,
+                        latestScenario.finance.debtPct
+                      );
                       handleSaveWithScenario(latestScenario);
                       return latestScenario;
                     });
@@ -539,6 +600,11 @@ export default function MultiSkuEditor({
                 value={scenario.finance.costOfDebtPct * 100}
                 onChange={(v) => {
                   const newCostOfDebt = Number(v) / 100;
+                  console.log(`Cost of Debt input changed:`, {
+                    inputValue: v,
+                    calculatedCostOfDebt: newCostOfDebt,
+                    oldCostOfDebt: scenario.finance.costOfDebtPct,
+                  });
                   setScenario((s) => ({
                     ...s,
                     finance: {
@@ -553,6 +619,10 @@ export default function MultiSkuEditor({
                   }
                   const timer = setTimeout(() => {
                     setScenario((latestScenario) => {
+                      console.log(
+                        `Auto-saving with new cost of debt:`,
+                        latestScenario.finance.costOfDebtPct
+                      );
                       handleSaveWithScenario(latestScenario);
                       return latestScenario;
                     });
@@ -1230,13 +1300,13 @@ export default function MultiSkuEditor({
                               if (sku) {
                                 // Total Capex = Cost of New Machine + mould + infra
                                 const totalCapex =
-                                  (sku.capex.machineCost || 0) +
-                                  (sku.npd.mouldCost || 0) +
-                                  (sku.capex.infraCost || 0);
+                                  (sku.ops?.costOfNewMachine || 0) +
+                                  (sku.npd?.mouldCost || 0) +
+                                  (sku.ops?.costOfNewInfra || 0);
 
                                 // Working capital investment = Total revenue * WC Days
                                 const workingCapitalDays =
-                                  sku.capex.workingCapitalDays || 0;
+                                  sku.capex?.workingCapitalDays || 60;
                                 const yearRevenue =
                                   calc.pnl[i]?.revenueNet || 0;
                                 const workingCapitalInvestment =
@@ -1303,11 +1373,11 @@ export default function MultiSkuEditor({
                               );
                               if (sku) {
                                 const totalCapex =
-                                  (sku.capex.machineCost || 0) +
-                                  (sku.npd.mouldCost || 0) +
-                                  (sku.capex.infraCost || 0);
+                                  (sku.ops?.costOfNewMachine || 0) +
+                                  (sku.npd?.mouldCost || 0) +
+                                  (sku.ops?.costOfNewInfra || 0);
                                 const workingCapitalDays =
-                                  sku.capex.workingCapitalDays || 0;
+                                  sku.capex?.workingCapitalDays || 60;
                                 const yearRevenue =
                                   calc.pnl[i]?.revenueNet || 0;
                                 const workingCapitalInvestment =
@@ -1374,11 +1444,11 @@ export default function MultiSkuEditor({
                               );
                               if (sku) {
                                 const totalCapex =
-                                  (sku.capex.machineCost || 0) +
-                                  (sku.npd.mouldCost || 0) +
-                                  (sku.capex.infraCost || 0);
+                                  (sku.ops?.costOfNewMachine || 0) +
+                                  (sku.npd?.mouldCost || 0) +
+                                  (sku.ops?.costOfNewInfra || 0);
                                 const workingCapitalDays =
-                                  sku.capex.workingCapitalDays || 0;
+                                  sku.capex?.workingCapitalDays || 60;
                                 const yearRevenue =
                                   calc.pnl[i]?.revenueNet || 0;
                                 const workingCapitalInvestment =
@@ -1390,8 +1460,7 @@ export default function MultiSkuEditor({
                           }
                           const interestPerKg =
                             totalWeight > 0
-                              ? (totalInvestment *
-                                  scenario.finance.costOfDebtPct) /
+                              ? (totalInvestment * scenario.finance.costOfDebtPct) /
                                 totalWeight
                               : 0;
 
@@ -1444,11 +1513,11 @@ export default function MultiSkuEditor({
                               );
                               if (sku) {
                                 const totalCapex =
-                                  (sku.capex.machineCost || 0) +
-                                  (sku.npd.mouldCost || 0) +
-                                  (sku.capex.infraCost || 0);
+                                  (sku.ops?.costOfNewMachine || 0) +
+                                  (sku.npd?.mouldCost || 0) +
+                                  (sku.ops?.costOfNewInfra || 0);
                                 const workingCapitalDays =
-                                  sku.capex.workingCapitalDays || 0;
+                                  sku.capex?.workingCapitalDays || 60;
                                 const yearRevenue =
                                   calc.pnl[i]?.revenueNet || 0;
                                 const workingCapitalInvestment =
@@ -1564,36 +1633,121 @@ export default function MultiSkuEditor({
                         "Interest",
                         (y: (typeof calc.pnl)[number]) => {
                           // Calculate total investment across all SKUs
+                          console.log(
+                            `=== Year ${y.year} Investment Calculation Start ===`
+                          );
+                          console.log(`Total SKUs: ${scenario.skus.length}`);
+                          console.log(
+                            `SKUs data structure:`,
+                            scenario.skus.map((sku) => ({
+                              name: sku.name,
+                              hasOps: !!sku.ops,
+                              hasNpd: !!sku.npd,
+                              hasCapex: !!sku.capex,
+                              opsKeys: sku.ops ? Object.keys(sku.ops) : [],
+                              npdKeys: sku.npd ? Object.keys(sku.npd) : [],
+                              capexKeys: sku.capex
+                                ? Object.keys(sku.capex)
+                                : [],
+                            }))
+                          );
+
                           const totalCapex = scenario.skus.reduce(
                             (total, sku) => {
-                              return (
-                                total +
-                                (sku.capex.machineCost || 0) +
-                                (sku.npd.mouldCost || 0) +
-                                (sku.capex.infraCost || 0)
-                              );
+                              console.log(`Processing SKU ${sku.name}:`, {
+                                rawOps: sku.ops,
+                                rawNpd: sku.npd,
+                                machineCost: sku.ops?.costOfNewMachine,
+                                mouldCost: sku.npd?.mouldCost,
+                                infraCost: sku.ops?.costOfNewInfra,
+                                workingCapitalDays:
+                                  sku.capex?.workingCapitalDays,
+                              });
+
+                              const skuCapex =
+                                (sku.ops?.costOfNewMachine || 0) +
+                                (sku.npd?.mouldCost || 0) +
+                                (sku.ops?.costOfNewInfra || 0);
+                              console.log(`SKU ${sku.name} Capex:`, {
+                                machineCost: sku.ops?.costOfNewMachine || 0,
+                                mouldCost: sku.npd?.mouldCost || 0,
+                                infraCost: sku.ops?.costOfNewInfra || 0,
+                                totalSkuCapex: skuCapex,
+                                runningTotal: total + skuCapex,
+                              });
+                              return total + skuCapex;
                             },
                             0
                           );
 
+                          console.log(`Final Total Capex: ${totalCapex}`);
+
                           // Working capital investment = Total revenue * WC Days
+                          const workingCapitalDaysArray = scenario.skus.map(
+                            (s) => s.capex?.workingCapitalDays || 60
+                          );
                           const workingCapitalDays = Math.max(
-                            0,
-                            ...scenario.skus.map(
-                              (s) => s.capex.workingCapitalDays || 0
-                            )
+                            60,
+                            ...workingCapitalDaysArray
                           );
                           const workingCapitalInvestment =
                             y.revenueNet * (workingCapitalDays / 365);
+
+                          console.log(`Working Capital Calculation:`, {
+                            revenueNet: y.revenueNet,
+                            workingCapitalDays,
+                            workingCapitalDaysArray,
+                            workingCapitalInvestment,
+                            workingCapitalFormula: `${
+                              y.revenueNet
+                            } * (${workingCapitalDays} / 365) = ${
+                              y.revenueNet * (workingCapitalDays / 365)
+                            }`,
+                          });
 
                           // Total investment = Total capex + working capital investment
                           const totalInvestment =
                             totalCapex + workingCapitalInvestment;
 
+                          console.log(`Total Investment Calculation:`, {
+                            totalCapex,
+                            workingCapitalInvestment,
+                            totalInvestment,
+                          });
+
                           // Interest = Total investment * Cost of Debt
-                          return (
-                            totalInvestment * scenario.finance.costOfDebtPct
-                          );
+                          const interest =
+                            totalInvestment * scenario.finance.costOfDebtPct;
+
+                          // Debug logs
+                          console.log(`Year ${y.year} Interest Calculation:`, {
+                            totalCapex,
+                            workingCapitalDays,
+                            workingCapitalInvestment,
+                            totalInvestment,
+                            costOfDebtPct: scenario.finance.costOfDebtPct,
+                            interest,
+                            revenueNet: y.revenueNet,
+                          });
+
+                          // Additional debug for finance values
+                          console.log(`Finance object debug:`, {
+                            finance: scenario.finance,
+                            debtPctType: typeof scenario.finance.debtPct,
+                            costOfDebtPctType:
+                              typeof scenario.finance.costOfDebtPct,
+                            debtPctValue: scenario.finance.debtPct,
+                            costOfDebtPctValue: scenario.finance.costOfDebtPct,
+                            isDebtPctZero: scenario.finance.debtPct === 0,
+                            isCostOfDebtPctZero:
+                              scenario.finance.costOfDebtPct === 0,
+                            isDebtPctUndefined:
+                              scenario.finance.debtPct === undefined,
+                            isCostOfDebtPctUndefined:
+                              scenario.finance.costOfDebtPct === undefined,
+                          });
+
+                          return interest;
                         },
                       ],
                       [
@@ -1614,17 +1768,17 @@ export default function MultiSkuEditor({
                             (total, sku) => {
                               return (
                                 total +
-                                (sku.capex.machineCost || 0) +
-                                (sku.npd.mouldCost || 0) +
-                                (sku.capex.infraCost || 0)
+                                (sku.ops?.costOfNewMachine || 0) +
+                                (sku.npd?.mouldCost || 0) +
+                                (sku.ops?.costOfNewInfra || 0)
                               );
                             },
                             0
                           );
                           const workingCapitalDays = Math.max(
-                            0,
+                            60,
                             ...scenario.skus.map(
-                              (s) => s.capex.workingCapitalDays || 0
+                              (s) => s.capex?.workingCapitalDays || 60
                             )
                           );
                           const workingCapitalInvestment =
@@ -1633,6 +1787,17 @@ export default function MultiSkuEditor({
                             totalCapex + workingCapitalInvestment;
                           const interest =
                             totalInvestment * scenario.finance.costOfDebtPct;
+
+                          // Debug logs for PBT
+                          console.log(`Year ${y.year} PBT Calculation:`, {
+                            ebitda: y.ebitda,
+                            depreciation,
+                            ebit,
+                            totalInvestment,
+                            costOfDebtPct: scenario.finance.costOfDebtPct,
+                            interest,
+                            pbt: ebit - interest,
+                          });
 
                           // PBT = EBIT - Interest
                           return ebit - interest;
@@ -1656,17 +1821,17 @@ export default function MultiSkuEditor({
                             (total, sku) => {
                               return (
                                 total +
-                                (sku.capex.machineCost || 0) +
-                                (sku.npd.mouldCost || 0) +
-                                (sku.capex.infraCost || 0)
+                                (sku.ops?.costOfNewMachine || 0) +
+                                (sku.npd?.mouldCost || 0) +
+                                (sku.ops?.costOfNewInfra || 0)
                               );
                             },
                             0
                           );
                           const workingCapitalDays = Math.max(
-                            0,
+                            60,
                             ...scenario.skus.map(
-                              (s) => s.capex.workingCapitalDays || 0
+                              (s) => s.capex?.workingCapitalDays || 60
                             )
                           );
                           const workingCapitalInvestment =
@@ -1699,17 +1864,17 @@ export default function MultiSkuEditor({
                             (total, sku) => {
                               return (
                                 total +
-                                (sku.capex.machineCost || 0) +
-                                (sku.npd.mouldCost || 0) +
-                                (sku.capex.infraCost || 0)
+                                (sku.ops?.costOfNewMachine || 0) +
+                                (sku.npd?.mouldCost || 0) +
+                                (sku.ops?.costOfNewInfra || 0)
                               );
                             },
                             0
                           );
                           const workingCapitalDays = Math.max(
-                            0,
+                            60,
                             ...scenario.skus.map(
-                              (s) => s.capex.workingCapitalDays || 0
+                              (s) => s.capex?.workingCapitalDays || 60
                             )
                           );
                           const workingCapitalInvestment =
@@ -2130,11 +2295,11 @@ export default function MultiSkuEditor({
                       </div>
                       <div>
                         <span className="text-gray-600">Machine Cost:</span> ₹
-                        {formatCrores(sku.capex.machineCost)}
+                        {formatCrores(sku.ops?.costOfNewMachine || 0)}
                       </div>
                       <div>
                         <span className="text-gray-600">Mould Cost:</span> ₹
-                        {formatCrores(sku.capex.mouldCost)}
+                        {formatCrores(sku.npd?.mouldCost || 0)}
                       </div>
                     </div>
                   </div>

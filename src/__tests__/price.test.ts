@@ -1,4 +1,4 @@
-import { PriceYear, PriceComponentsPerKg } from '@/lib/types';
+import { PriceYear } from '@/lib/types';
 
 describe('Price Calculations', () => {
   describe('Price Structure', () => {
@@ -222,7 +222,6 @@ describe('Price Calculations', () => {
     it('should handle price inflation over multiple years', () => {
       const basePrice = 15;
       const inflationRate = 0.05; // 5% per year
-      const volumePieces = 10000;
 
       const prices: PriceYear[] = [];
       for (let year = 1; year <= 5; year++) {
