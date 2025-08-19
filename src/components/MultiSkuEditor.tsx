@@ -1460,7 +1460,8 @@ export default function MultiSkuEditor({
                           }
                           const interestPerKg =
                             totalWeight > 0
-                              ? (totalInvestment * scenario.finance.costOfDebtPct) /
+                              ? (totalInvestment *
+                                  scenario.finance.costOfDebtPct) /
                                 totalWeight
                               : 0;
 
