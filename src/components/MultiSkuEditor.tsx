@@ -203,6 +203,29 @@ export default function MultiSkuEditor({
     return den > 0 ? num / den : 0;
   }
 
+  // Calculate total depreciation per SKU
+  function calculateTotalDepreciation(sku: Sku): number {
+    const machineDepreciation =
+      (sku.ops.costOfNewMachine || 0) + (sku.ops.costOfOldMachine || 0);
+    const mouldDepreciation =
+      (sku.ops.costOfNewMould || 0) + (sku.ops.costOfOldMould || 0);
+    const infraDepreciation =
+      (sku.ops.costOfNewInfra || 0) + (sku.ops.costOfOldInfra || 0);
+
+    const machineDepreciationPerYear =
+      machineDepreciation / (sku.ops.lifeOfNewMachineYears || 15);
+    const mouldDepreciationPerYear =
+      mouldDepreciation / (sku.ops.lifeOfNewMouldYears || 15);
+    const infraDepreciationPerYear =
+      infraDepreciation / (sku.ops.lifeOfNewInfraYears || 30);
+
+    return (
+      machineDepreciationPerYear +
+      mouldDepreciationPerYear +
+      infraDepreciationPerYear
+    );
+  }
+
   function updateSku(updater: (s: Sku) => Sku) {
     setScenario((prev) => {
       const copy = { ...prev, skus: prev.skus.map((x) => ({ ...x })) };
@@ -248,8 +271,6 @@ export default function MultiSkuEditor({
       sales: {
         ...base.sales,
         baseAnnualVolumePieces: 0,
-        product: "",
-        customer: "",
       },
       npd: { ...base.npd },
       ops: { ...base.ops },
@@ -538,35 +559,209 @@ export default function MultiSkuEditor({
 
           {/* Ops Team */}
           <Section title="Ops Inputs">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <LabeledInput
-                label="Investment Required (Y/N)"
-                value={(sku.capex.investmentRequired ? "Yes" : "No") as string}
-                onChange={(v) =>
-                  updateSku((s) => ({
-                    ...s,
-                    capex: {
-                      ...s.capex,
-                      investmentRequired: String(v)
-                        .toLowerCase()
-                        .startsWith("y"),
-                    },
-                  }))
-                }
-              />
-              <LabeledInput
-                label="Machine Available (Y/N)"
-                value={(sku.ops.machineAvailable ? "Yes" : "No") as string}
-                onChange={(v) =>
-                  updateSku((s) => ({
-                    ...s,
-                    ops: {
-                      ...s.ops,
-                      machineAvailable: String(v).toLowerCase().startsWith("y"),
-                    },
-                  }))
-                }
-              />
+            <div className="space-y-6">
+              {/* Boolean options */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-300 hover:border-slate-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    checked={sku.ops.newMachineRequired || false}
+                    onChange={(e) =>
+                      updateSku((s) => ({
+                        ...s,
+                        ops: {
+                          ...s.ops,
+                          newMachineRequired: e.target.checked,
+                        },
+                      }))
+                    }
+                  />
+                  <span className="text-sm text-slate-700">
+                    New Machine Required?
+                  </span>
+                </label>
+                <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-300 hover:border-slate-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    checked={sku.ops.newMouldRequired || false}
+                    onChange={(e) =>
+                      updateSku((s) => ({
+                        ...s,
+                        ops: {
+                          ...s.ops,
+                          newMouldRequired: e.target.checked,
+                        },
+                      }))
+                    }
+                  />
+                  <span className="text-sm text-slate-700">
+                    New Mould Required?
+                  </span>
+                </label>
+                <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-300 hover:border-slate-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    checked={sku.ops.newInfraRequired || false}
+                    onChange={(e) =>
+                      updateSku((s) => ({
+                        ...s,
+                        ops: {
+                          ...s.ops,
+                          newInfraRequired: e.target.checked,
+                        },
+                      }))
+                    }
+                  />
+                  <span className="text-sm text-slate-700">
+                    New Infra Required?
+                  </span>
+                </label>
+              </div>
+
+              {/* Machine costs */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {sku.ops.newMachineRequired ? (
+                  <LabeledInput
+                    label="Cost of New Machine (Rs)"
+                    type="number"
+                    step={1}
+                    value={sku.ops.costOfNewMachine || 0}
+                    onChange={(v) =>
+                      updateSku((s) => ({
+                        ...s,
+                        ops: { ...s.ops, costOfNewMachine: Number(v) },
+                      }))
+                    }
+                  />
+                ) : (
+                  <LabeledInput
+                    label="Cost of Old Machine (Rs)"
+                    type="number"
+                    step={1}
+                    value={sku.ops.costOfOldMachine || 0}
+                    onChange={(v) =>
+                      updateSku((s) => ({
+                        ...s,
+                        ops: { ...s.ops, costOfOldMachine: Number(v) },
+                      }))
+                    }
+                  />
+                )}
+                <LabeledInput
+                  label="Life of Machine (years)"
+                  type="number"
+                  step={1}
+                  value={sku.ops.lifeOfNewMachineYears || 15}
+                  onChange={(v) =>
+                    updateSku((s) => ({
+                      ...s,
+                      ops: { ...s.ops, lifeOfNewMachineYears: Number(v) },
+                    }))
+                  }
+                />
+              </div>
+
+              {/* Mould costs */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {sku.ops.newMouldRequired ? (
+                  <LabeledInput
+                    label="Cost of New Mould (Rs)"
+                    type="number"
+                    step={1}
+                    value={sku.ops.costOfNewMould || 0}
+                    onChange={(v) =>
+                      updateSku((s) => ({
+                        ...s,
+                        ops: { ...s.ops, costOfNewMould: Number(v) },
+                      }))
+                    }
+                  />
+                ) : (
+                  <LabeledInput
+                    label="Cost of Old Mould (Rs)"
+                    type="number"
+                    step={1}
+                    value={sku.ops.costOfOldMould || 0}
+                    onChange={(v) =>
+                      updateSku((s) => ({
+                        ...s,
+                        ops: { ...s.ops, costOfOldMould: Number(v) },
+                      }))
+                    }
+                  />
+                )}
+                <LabeledInput
+                  label="Life of Mould (years)"
+                  type="number"
+                  step={1}
+                  value={sku.ops.lifeOfNewMouldYears || 15}
+                  onChange={(v) =>
+                    updateSku((s) => ({
+                      ...s,
+                      ops: { ...s.ops, lifeOfNewMouldYears: Number(v) },
+                    }))
+                  }
+                />
+              </div>
+
+              {/* Infra costs */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {sku.ops.newInfraRequired ? (
+                  <LabeledInput
+                    label="Cost of New Infra (Rs)"
+                    type="number"
+                    step={1}
+                    value={sku.ops.costOfNewInfra || 0}
+                    onChange={(v) =>
+                      updateSku((s) => ({
+                        ...s,
+                        ops: { ...s.ops, costOfNewInfra: Number(v) },
+                      }))
+                    }
+                  />
+                ) : (
+                  <LabeledInput
+                    label="Cost of Old Infra (Rs)"
+                    type="number"
+                    step={1}
+                    value={sku.ops.costOfOldInfra || 0}
+                    onChange={(v) =>
+                      updateSku((s) => ({
+                        ...s,
+                        ops: { ...s.ops, costOfOldInfra: Number(v) },
+                      }))
+                    }
+                  />
+                )}
+                <LabeledInput
+                  label="Life of Infra (years)"
+                  type="number"
+                  step={1}
+                  value={sku.ops.lifeOfNewInfraYears || 30}
+                  onChange={(v) =>
+                    updateSku((s) => ({
+                      ...s,
+                      ops: { ...s.ops, lifeOfNewInfraYears: Number(v) },
+                    }))
+                  }
+                />
+              </div>
+
+              {/* Total Depreciation Display */}
+              <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+                <div className="text-sm text-blue-700 mb-2">
+                  Total Depreciation per SKU (per year)
+                </div>
+                <div className="text-2xl font-bold text-blue-900">
+                  ₹
+                  {calculateTotalDepreciation(sku).toLocaleString("en-IN", {
+                    maximumFractionDigits: 2,
+                  })}
+                </div>
+              </div>
             </div>
           </Section>
 
@@ -721,11 +916,37 @@ export default function MultiSkuEditor({
                         (i: number) =>
                           calc.weightedAvgPricePerKg[i]?.ebitdaPerKg || 0,
                       ],
-                      // [
-                      //   "Depreciation",
-                      //   (i: number) =>
-                      //     calc.weightedAvgPricePerKg[i]?.depreciationPerKg || 0,
-                      // ],
+                      [
+                        "Depreciation",
+                        (i: number) => {
+                          // Calculate total depreciation amount across all SKUs for this year
+                          const bySku = calc.bySku || [];
+                          let totalDepreciationAmount = 0;
+                          let totalWeight = 0;
+
+                          for (const s of bySku) {
+                            const vkg = s.volumes[i]?.weightKg || 0;
+                            if (vkg > 0) {
+                              // Find the corresponding SKU in scenario to get ops data
+                              const sku = scenario.skus.find(
+                                (sku) => sku.id === s.skuId
+                              );
+                              if (sku) {
+                                const skuDepreciation =
+                                  calculateTotalDepreciation(sku);
+                                // Add the total depreciation amount (not multiplied by weight)
+                                totalDepreciationAmount += skuDepreciation;
+                                totalWeight += vkg;
+                              }
+                            }
+                          }
+
+                          // Depreciation per kg = Total depreciation amount / Total weight
+                          return totalWeight > 0
+                            ? totalDepreciationAmount / totalWeight
+                            : 0;
+                        },
+                      ],
                       // [
                       //   "EBIT",
                       //   (i: number) =>
@@ -806,10 +1027,15 @@ export default function MultiSkuEditor({
                         (y: (typeof calc.pnl)[number]) => y.sgaCost,
                       ],
                       ["EBITDA", (y: (typeof calc.pnl)[number]) => y.ebitda],
-                      // [
-                      //   "Depreciation",
-                      //   (y: (typeof calc.pnl)[number]) => y.depreciation,
-                      // ],
+                      [
+                        "Depreciation",
+                        (y: (typeof calc.pnl)[number]) => {
+                          // Calculate total depreciation across all SKUs for this year
+                          return scenario.skus.reduce((total, sku) => {
+                            return total + calculateTotalDepreciation(sku);
+                          }, 0);
+                        },
+                      ],
                       // ["EBIT", (y: (typeof calc.pnl)[number]) => y.ebit],
                       // ["PBT", (y: (typeof calc.pnl)[number]) => y.pbt],
                       // ["PAT", (y: (typeof calc.pnl)[number]) => y.pat],
@@ -876,11 +1102,7 @@ export default function MultiSkuEditor({
                         const baseVolume =
                           scenario.skus[skuIndex]?.sales
                             .baseAnnualVolumePieces || 0;
-                        const growthPct =
-                          scenario.skus[skuIndex]?.sales.yoyGrowthPct?.[idx] ||
-                          0;
-                        const growthFactor =
-                          idx === 0 ? 1 : 1 + growthPct / 100;
+                        const growthFactor = 1; // No growth - simplified
                         const weightPerPiece = vol.weightKg / vol.volumePieces;
                         return (
                           <React.Fragment key={vol.year}>

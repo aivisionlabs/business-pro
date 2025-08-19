@@ -13,16 +13,9 @@ export type PlantMaster = {
 };
 
 export type SalesInput = {
-  customer: string;
-  product: string;
-  productWeightGrams: number;
-  conversionRecoveryRsPerPiece?: number; // optional; may be derived from alt conversion
-  mouldAmortizationRsPerPiece: number;
-  discountRsPerPiece: number; // sales discount
-  freightOutSalesRsPerPiece: number; // customer freight shown in P&L
   baseAnnualVolumePieces: number; // Year 1 pieces
-  yoyGrowthPct: number[]; // length 5, index 0 for Y1 (usually 0), 1..4 for Y2..Y5
-  inflationPassThrough: boolean; // if true, hold material margin per piece constant
+  conversionRecoveryRsPerPiece?: number; // optional; may be derived from alt conversion
+  productWeightGrams: number;
 };
 
 export type NpdInput = {
@@ -44,6 +37,19 @@ export type OpsInput = {
   workingDaysPerYear?: number; // default 365
   shiftsPerDay?: number; // default 3
   machineAvailable?: boolean; // UI-only flag; not used in calc yet
+  // New fields for depreciation calculation
+  newMachineRequired?: boolean;
+  newMouldRequired?: boolean;
+  newInfraRequired?: boolean;
+  costOfNewMachine?: number;
+  costOfOldMachine?: number;
+  costOfNewMould?: number;
+  costOfOldMould?: number;
+  costOfNewInfra?: number;
+  costOfOldInfra?: number;
+  lifeOfNewMachineYears?: number; // default 15
+  lifeOfNewMouldYears?: number; // default 15
+  lifeOfNewInfraYears?: number; // default 30
 };
 
 export type CostingInput = {
@@ -124,7 +130,6 @@ export type PriceComponentsPerKg = {
   valueAddPerKg: number;
   packagingPerKg: number;
   freightOutPerKg: number;
-  mouldAmortPerKg: number;
   conversionPerKg: number;
   totalPerKg: number;
 };
@@ -138,8 +143,6 @@ export type PriceYear = {
 export type PnlYear = {
   year: number;
   revenueGross: number;
-  discountExpense: number;
-  customerFreightExpense: number;
   revenueNet: number;
   materialCost: number;
   materialMargin: number;
@@ -148,7 +151,6 @@ export type PnlYear = {
   valueAddCost: number;
   packagingCost: number;
   freightOutCost: number;
-  mouldAmortCost: number;
   conversionRecoveryCost: number;
   rAndMCost: number;
   otherMfgCost: number;

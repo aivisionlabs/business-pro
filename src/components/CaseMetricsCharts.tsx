@@ -81,7 +81,6 @@ export default function CaseMetricsCharts({
       year.valueAddCost +
       year.packagingCost +
       year.freightOutCost +
-      year.mouldAmortCost +
       year.rAndMCost +
       year.otherMfgCost,
   }));

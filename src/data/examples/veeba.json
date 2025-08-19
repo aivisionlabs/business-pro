@@ -4,22 +4,9 @@
   "createdAt": "2025-08-11T00:00:00.000Z",
   "updatedAt": "2025-08-11T00:00:00.000Z",
   "sales": {
-    "customer": "Veeba",
-    "product": "Cap 38mm",
-    "productWeightGrams": 0.3,
-    "conversionRecoveryRsPerPiece": 0.75,
-    "mouldAmortizationRsPerPiece": 0.1,
-    "discountRsPerPiece": 0.02,
-    "freightOutSalesRsPerPiece": 0.03,
     "baseAnnualVolumePieces": 12000000,
-    "yoyGrowthPct": [
-      0,
-      0.1,
-      0.1,
-      0.05,
-      0.05
-    ],
-    "inflationPassThrough": true
+    "conversionRecoveryRsPerPiece": 0.75,
+    "productWeightGrams": 0.3
   },
   "npd": {
     "machineName": "IMM-350T",

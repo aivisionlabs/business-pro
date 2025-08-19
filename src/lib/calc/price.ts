@@ -51,7 +51,6 @@ export function buildPriceByYear(
     (costing.packagingRsPerKg ?? 0) || perPieceToPerKg(costing.packagingRsPerPiece || 0, productWeightKg);
   const freightOutPerKgY1 =
     (costing.freightOutRsPerKg ?? 0) || perPieceToPerKg(costing.freightOutRsPerPiece || 0, productWeightKg);
-  const mouldAmortPerKgY1 = perPieceToPerKg(sales.mouldAmortizationRsPerPiece, productWeightKg);
   const conversionPerKgY1 = perPieceToPerKg(conversionRsPerPiece, productWeightKg);
 
   const rmInflFactors = compoundInflationSeries(costing.rmInflationPct);
@@ -74,10 +73,9 @@ export function buildPriceByYear(
     // Convert Rs/kg inputs back to per piece using weight
     packagingPerKgY1 * productWeightKg +
     freightOutPerKgY1 * productWeightKg +
-    sales.mouldAmortizationRsPerPiece +
     conversionRsPerPiece;
   const pricePerPieceY1 = materialPerPieceY1 + perPieceItemsY1;
-  const materialMarginPerPieceY1 = pricePerPieceY1 - materialPerPieceY1;
+
 
   for (let year = 1; year <= years; year += 1) {
     const idx = year - 1;
@@ -88,7 +86,6 @@ export function buildPriceByYear(
     const valueAddPerKg = valueAddPerKgY1 * (convInflFactors[idx] || 1);
     const packagingPerKg = packagingPerKgY1 * (convInflFactors[idx] || 1);
     const freightOutPerKg = freightOutPerKgY1 * (convInflFactors[idx] || 1);
-    const mouldAmortPerKg = mouldAmortPerKgY1 * (convInflFactors[idx] || 1);
     const conversionPerKg = conversionPerKgY1 * (convInflFactors[idx] || 1);
 
     const totalPerKg =
@@ -97,17 +94,11 @@ export function buildPriceByYear(
       valueAddPerKg +
       packagingPerKg +
       freightOutPerKg +
-      mouldAmortPerKg +
       conversionPerKg;
 
-    let pricePerPiece: number;
-    if (sales.inflationPassThrough) {
-      const materialPerPiece = (rmOnlyPerKg + mbOnlyPerKg) * productWeightKg;
-      pricePerPiece = materialPerPiece + materialMarginPerPieceY1;
-    } else {
-      const factor = convInflFactors[idx] || 1;
-      pricePerPiece = pricePerPieceY1 * factor;
-    }
+    const factor = convInflFactors[idx] || 1;
+    const pricePerPiece = pricePerPieceY1 * factor;
+
 
     const perKg: PriceComponentsPerKg = {
       rmPerKg: rmOnlyPerKg,
@@ -115,7 +106,6 @@ export function buildPriceByYear(
       valueAddPerKg,
       packagingPerKg,
       freightOutPerKg,
-      mouldAmortPerKg,
       conversionPerKg,
       totalPerKg,
     };
@@ -152,7 +142,6 @@ export function buildWeightedAvgPricePerKg(
     let valueAddPerKg = 0;
     let packagingPerKg = 0;
     let freightOutPerKg = 0;
-    let mouldAmortPerKg = 0;
     let conversionPerKg = 0;
 
     for (const sku of bySku) {
@@ -169,12 +158,11 @@ export function buildWeightedAvgPricePerKg(
       valueAddPerKg += skuPrice.perKg.valueAddPerKg * weightRatio;
       packagingPerKg += skuPrice.perKg.packagingPerKg * weightRatio;
       freightOutPerKg += skuPrice.perKg.freightOutPerKg * weightRatio;
-      mouldAmortPerKg += skuPrice.perKg.mouldAmortPerKg * weightRatio;
       conversionPerKg += skuPrice.perKg.conversionPerKg * weightRatio;
     }
 
     const totalPerKg = rmPerKg + mbPerKg + valueAddPerKg + packagingPerKg +
-      freightOutPerKg + mouldAmortPerKg + conversionPerKg;
+      freightOutPerKg + conversionPerKg;
 
     // Calculate weighted average price per piece
     let pricePerPiece = 0;
@@ -195,7 +183,6 @@ export function buildWeightedAvgPricePerKg(
       valueAddPerKg,
       packagingPerKg,
       freightOutPerKg,
-      mouldAmortPerKg,
       conversionPerKg,
       totalPerKg,
     };

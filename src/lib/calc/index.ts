@@ -49,8 +49,6 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
     const acc: PnlYear = {
       year,
       revenueGross: 0,
-      discountExpense: 0,
-      customerFreightExpense: 0,
       revenueNet: 0,
       materialCost: 0,
       materialMargin: 0,
@@ -59,7 +57,6 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
       valueAddCost: 0,
       packagingCost: 0,
       freightOutCost: 0,
-      mouldAmortCost: 0,
       conversionRecoveryCost: 0,
       rAndMCost: 0,
       otherMfgCost: 0,
@@ -80,8 +77,6 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
       const y = s.pnl[i];
       if (!y) continue;
       acc.revenueGross += y.revenueGross;
-      acc.discountExpense += y.discountExpense;
-      acc.customerFreightExpense += y.customerFreightExpense;
       acc.revenueNet += y.revenueNet;
       acc.materialCost += y.materialCost;
       acc.materialMargin += y.materialMargin;
@@ -90,7 +85,6 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
       acc.valueAddCost += y.valueAddCost;
       acc.packagingCost += y.packagingCost;
       acc.freightOutCost += y.freightOutCost;
-      acc.mouldAmortCost += y.mouldAmortCost;
       acc.conversionRecoveryCost += y.conversionRecoveryCost;
       acc.rAndMCost += y.rAndMCost;
       acc.otherMfgCost += y.otherMfgCost;

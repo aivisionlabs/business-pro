@@ -11,7 +11,7 @@ export function buildPnlForSku(
   const volumes = computeVolumes(
     sales.productWeightGrams,
     sales.baseAnnualVolumePieces,
-    sales.yoyGrowthPct
+    [0, 0, 0, 0, 0] // Default: no growth for all years
   );
 
   const powerRate = plantMaster.powerRatePerUnit;
@@ -30,9 +30,8 @@ export function buildPnlForSku(
     const p = price[year - 1];
 
     const revenueGross = p.pricePerPiece * volumePieces;
-    const discountExpense = sales.discountRsPerPiece * volumePieces;
-    const customerFreightExpense = sales.freightOutSalesRsPerPiece * volumePieces;
-    const revenueNet = revenueGross - discountExpense;
+
+    const revenueNet = revenueGross;
 
     // const materialCostPerKg = p.perKg.rmPerKg + p.perKg.mbPerKg; // Unused variable
 
@@ -47,7 +46,6 @@ export function buildPnlForSku(
     const valueAddCost = sku.costing.valueAddRsPerPiece * volumePieces;
     const packagingCost = (sku.costing.packagingRsPerKg || 0) * weightKg; // now Rs/kg
     const freightOutCost = (sku.costing.freightOutRsPerKg || 0) * weightKg; // now Rs/kg
-    const mouldAmortCost = sku.sales.mouldAmortizationRsPerPiece * volumePieces;
     const conversionRecoveryCost = (sku.sales.conversionRecoveryRsPerPiece || 0) * volumePieces;
 
     // Update material cost to include RM cost + MB cost + packaging cost + freight cost
@@ -96,8 +94,6 @@ export function buildPnlForSku(
     pnl.push({
       year,
       revenueGross,
-      discountExpense,
-      customerFreightExpense,
       revenueNet,
       materialCost,
       materialMargin,
@@ -106,7 +102,6 @@ export function buildPnlForSku(
       valueAddCost,
       packagingCost,
       freightOutCost,
-      mouldAmortCost,
       conversionRecoveryCost,
       rAndMCost,
       otherMfgCost,
