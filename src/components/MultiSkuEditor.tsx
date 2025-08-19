@@ -132,7 +132,40 @@ export default function MultiSkuEditor({
   );
   const sku = scenario.skus[activeSkuIndex];
 
-  useEffect(() => setScenario(initial), [initial]);
+  useEffect(() => {
+    // Ensure finance inputs have default values if they're missing
+    const updatedScenario = { ...initial };
+    let needsSave = false;
+
+    if (updatedScenario.finance) {
+      const originalFinance = updatedScenario.finance;
+      updatedScenario.finance = {
+        includeCorpSGA: originalFinance.includeCorpSGA ?? true,
+        debtPct: originalFinance.debtPct ?? 0,
+        costOfDebtPct: originalFinance.costOfDebtPct ?? 0,
+        costOfEquityPct: originalFinance.costOfEquityPct ?? 0,
+        corporateTaxRatePct: originalFinance.corporateTaxRatePct ?? 0.25, // Default to 25%
+      };
+
+      // Check if any defaults were applied
+      if (
+        originalFinance.corporateTaxRatePct === undefined ||
+        originalFinance.corporateTaxRatePct === null ||
+        originalFinance.corporateTaxRatePct === 0
+      ) {
+        needsSave = true;
+      }
+    }
+
+    setScenario(updatedScenario);
+
+    // If defaults were applied, save to database
+    if (needsSave) {
+      setTimeout(() => {
+        handleSaveWithScenario(updatedScenario);
+      }, 1000);
+    }
+  }, [initial]);
 
   // Clear save message after 3 seconds
   useEffect(() => {
@@ -440,6 +473,163 @@ export default function MultiSkuEditor({
 
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
         <div className="xl:col-span-3 space-y-4">
+          {/* Finance Inputs */}
+          <Section title="💰 Finance Inputs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <LabeledInput
+                label="Tax Rate (%)"
+                type="number"
+                step={0.1}
+                value={scenario.finance.corporateTaxRatePct * 100}
+                onChange={(v) => {
+                  const newTaxRate = Number(v) / 100;
+                  setScenario((s) => ({
+                    ...s,
+                    finance: {
+                      ...s.finance,
+                      corporateTaxRatePct: newTaxRate,
+                    },
+                  }));
+
+                  // Trigger auto-save for finance inputs
+                  if (autoSaveTimer) {
+                    clearTimeout(autoSaveTimer);
+                  }
+                  const timer = setTimeout(() => {
+                    setScenario((latestScenario) => {
+                      handleSaveWithScenario(latestScenario);
+                      return latestScenario;
+                    });
+                  }, 2000);
+                  setAutoSaveTimer(timer);
+                }}
+              />
+              <LabeledInput
+                label="Debt Percentage (%)"
+                type="number"
+                step={0.1}
+                value={scenario.finance.debtPct * 100}
+                onChange={(v) => {
+                  const newDebtPct = Number(v) / 100;
+                  setScenario((s) => ({
+                    ...s,
+                    finance: {
+                      ...s.finance,
+                      debtPct: newDebtPct,
+                    },
+                  }));
+
+                  // Trigger auto-save for finance inputs
+                  if (autoSaveTimer) {
+                    clearTimeout(autoSaveTimer);
+                  }
+                  const timer = setTimeout(() => {
+                    setScenario((latestScenario) => {
+                      handleSaveWithScenario(latestScenario);
+                      return latestScenario;
+                    });
+                  }, 2000);
+                  setAutoSaveTimer(timer);
+                }}
+              />
+              <LabeledInput
+                label="Cost of Debt (%)"
+                type="number"
+                step={0.1}
+                value={scenario.finance.costOfDebtPct * 100}
+                onChange={(v) => {
+                  const newCostOfDebt = Number(v) / 100;
+                  setScenario((s) => ({
+                    ...s,
+                    finance: {
+                      ...s.finance,
+                      costOfDebtPct: newCostOfDebt,
+                    },
+                  }));
+
+                  // Trigger auto-save for finance inputs
+                  if (autoSaveTimer) {
+                    clearTimeout(autoSaveTimer);
+                  }
+                  const timer = setTimeout(() => {
+                    setScenario((latestScenario) => {
+                      handleSaveWithScenario(latestScenario);
+                      return latestScenario;
+                    });
+                  }, 2000);
+                  setAutoSaveTimer(timer);
+                }}
+              />
+              <LabeledInput
+                label="Cost of Equity (%)"
+                type="number"
+                step={0.1}
+                value={scenario.finance.costOfEquityPct * 100}
+                onChange={(v) => {
+                  const newCostOfEquity = Number(v) / 100;
+                  setScenario((s) => ({
+                    ...s,
+                    finance: {
+                      ...s.finance,
+                      costOfEquityPct: newCostOfEquity,
+                    },
+                  }));
+
+                  // Trigger auto-save for finance inputs
+                  if (autoSaveTimer) {
+                    clearTimeout(autoSaveTimer);
+                  }
+                  const timer = setTimeout(() => {
+                    setScenario((latestScenario) => {
+                      handleSaveWithScenario(latestScenario);
+                      return latestScenario;
+                    });
+                  }, 2000);
+                  setAutoSaveTimer(timer);
+                }}
+              />
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="includeCorpSGA"
+                  checked={scenario.finance.includeCorpSGA}
+                  onChange={(e) => {
+                    setScenario((s) => ({
+                      ...s,
+                      finance: {
+                        ...s.finance,
+                        includeCorpSGA: e.target.checked,
+                      },
+                    }));
+
+                    // Trigger auto-save for finance inputs
+                    if (autoSaveTimer) {
+                      clearTimeout(autoSaveTimer);
+                    }
+                    const timer = setTimeout(() => {
+                      setScenario((latestScenario) => {
+                        handleSaveWithScenario(latestScenario);
+                        return latestScenario;
+                      });
+                    }, 2000);
+                    setAutoSaveTimer(timer);
+                  }}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="includeCorpSGA"
+                  className="text-sm text-slate-700"
+                >
+                  Include Corporate SGA
+                </label>
+              </div>
+              <div className="text-sm text-slate-600">
+                <div className="font-medium">Tax Formula:</div>
+                <div className="font-mono text-xs">Tax = Tax Rate × PBT</div>
+              </div>
+            </div>
+          </Section>
+
           {/* SKU Tabs */}
           <Section title="SKUs">
             <div className="flex flex-wrap gap-2 items-center">
@@ -1022,16 +1212,266 @@ export default function MultiSkuEditor({
                           return ebitda - depreciationPerKg;
                         },
                       ],
-                      // [
-                      //   "PBT",
-                      //   (i: number) =>
-                      //     calc.weightedAvgPricePerKg[i]?.pbtPerKg || 0,
-                      // ],
-                      // [
-                      //   "PAT",
-                      //   (i: number) =>
-                      //     calc.weightedAvgPricePerKg[i]?.patPerKg || 0,
-                      // ],
+                      [
+                        "Interest",
+                        (i: number) => {
+                          // Calculate total investment across all SKUs for this year
+                          const bySku = calc.bySku || [];
+                          let totalWeight = 0;
+                          let totalInvestment = 0;
+
+                          for (const s of bySku) {
+                            const vkg = s.volumes[i]?.weightKg || 0;
+                            if (vkg > 0) {
+                              // Find the corresponding SKU in scenario to get ops data
+                              const sku = scenario.skus.find(
+                                (sku) => sku.id === s.skuId
+                              );
+                              if (sku) {
+                                // Total Capex = Cost of New Machine + mould + infra
+                                const totalCapex =
+                                  (sku.capex.machineCost || 0) +
+                                  (sku.npd.mouldCost || 0) +
+                                  (sku.capex.infraCost || 0);
+
+                                // Working capital investment = Total revenue * WC Days
+                                const workingCapitalDays =
+                                  sku.capex.workingCapitalDays || 0;
+                                const yearRevenue =
+                                  calc.pnl[i]?.revenueNet || 0;
+                                const workingCapitalInvestment =
+                                  yearRevenue * (workingCapitalDays / 365);
+
+                                // Total investment = Total capex + working capital investment
+                                totalInvestment +=
+                                  totalCapex + workingCapitalInvestment;
+                                totalWeight += vkg;
+                              }
+                            }
+                          }
+
+                          // Interest per kg = Total investment * Cost of Debt / Total weight
+                          return totalWeight > 0
+                            ? (totalInvestment *
+                                scenario.finance.costOfDebtPct) /
+                                totalWeight
+                            : 0;
+                        },
+                      ],
+                      [
+                        "Tax",
+                        (i: number) => {
+                          const ebitda =
+                            calc.weightedAvgPricePerKg[i]?.ebitdaPerKg || 0;
+                          // Calculate total depreciation amount across all SKUs for this year
+                          const bySku = calc.bySku || [];
+                          let totalDepreciationAmount = 0;
+                          let totalWeight = 0;
+
+                          for (const s of bySku) {
+                            const vkg = s.volumes[i]?.weightKg || 0;
+                            if (vkg > 0) {
+                              // Find the corresponding SKU in scenario to get ops data
+                              const sku = scenario.skus.find(
+                                (sku) => sku.id === s.skuId
+                              );
+                              if (sku) {
+                                const skuDepreciation =
+                                  calculateTotalDepreciation(sku);
+                                // Add the total depreciation amount (not multiplied by weight)
+                                totalDepreciationAmount += skuDepreciation;
+                                totalWeight += vkg;
+                              }
+                            }
+                          }
+
+                          // Depreciation per kg = Total depreciation amount / Total weight
+                          const depreciationPerKg =
+                            totalWeight > 0
+                              ? totalDepreciationAmount / totalWeight
+                              : 0;
+
+                          const ebit = ebitda - depreciationPerKg;
+
+                          // Calculate interest per kg
+                          let totalInvestment = 0;
+                          for (const s of bySku) {
+                            const vkg = s.volumes[i]?.weightKg || 0;
+                            if (vkg > 0) {
+                              const sku = scenario.skus.find(
+                                (sku) => sku.id === s.skuId
+                              );
+                              if (sku) {
+                                const totalCapex =
+                                  (sku.capex.machineCost || 0) +
+                                  (sku.npd.mouldCost || 0) +
+                                  (sku.capex.infraCost || 0);
+                                const workingCapitalDays =
+                                  sku.capex.workingCapitalDays || 0;
+                                const yearRevenue =
+                                  calc.pnl[i]?.revenueNet || 0;
+                                const workingCapitalInvestment =
+                                  yearRevenue * (workingCapitalDays / 365);
+                                totalInvestment +=
+                                  totalCapex + workingCapitalInvestment;
+                              }
+                            }
+                          }
+                          const interestPerKg =
+                            totalWeight > 0
+                              ? (totalInvestment *
+                                  scenario.finance.costOfDebtPct) /
+                                totalWeight
+                              : 0;
+
+                          const pbt = ebit - interestPerKg;
+                          // Tax = Tax Rate × PBT
+                          return pbt * scenario.finance.corporateTaxRatePct;
+                        },
+                      ],
+                      [
+                        "PBT",
+                        (i: number) => {
+                          const ebitda =
+                            calc.weightedAvgPricePerKg[i]?.ebitdaPerKg || 0;
+                          // Calculate total depreciation amount across all SKUs for this year
+                          const bySku = calc.bySku || [];
+                          let totalDepreciationAmount = 0;
+                          let totalWeight = 0;
+
+                          for (const s of bySku) {
+                            const vkg = s.volumes[i]?.weightKg || 0;
+                            if (vkg > 0) {
+                              // Find the corresponding SKU in scenario to get ops data
+                              const sku = scenario.skus.find(
+                                (sku) => sku.id === s.skuId
+                              );
+                              if (sku) {
+                                const skuDepreciation =
+                                  calculateTotalDepreciation(sku);
+                                // Add the total depreciation amount (not multiplied by weight)
+                                totalDepreciationAmount += skuDepreciation;
+                                totalWeight += vkg;
+                              }
+                            }
+                          }
+
+                          // Depreciation per kg = Total depreciation amount / Total weight
+                          const depreciationPerKg =
+                            totalWeight > 0
+                              ? totalDepreciationAmount / totalWeight
+                              : 0;
+
+                          const ebit = ebitda - depreciationPerKg;
+
+                          // Calculate interest per kg
+                          let totalInvestment = 0;
+                          for (const s of bySku) {
+                            const vkg = s.volumes[i]?.weightKg || 0;
+                            if (vkg > 0) {
+                              const sku = scenario.skus.find(
+                                (sku) => sku.id === s.skuId
+                              );
+                              if (sku) {
+                                const totalCapex =
+                                  (sku.capex.machineCost || 0) +
+                                  (sku.npd.mouldCost || 0) +
+                                  (sku.capex.infraCost || 0);
+                                const workingCapitalDays =
+                                  sku.capex.workingCapitalDays || 0;
+                                const yearRevenue =
+                                  calc.pnl[i]?.revenueNet || 0;
+                                const workingCapitalInvestment =
+                                  yearRevenue * (workingCapitalDays / 365);
+                                totalInvestment +=
+                                  totalCapex + workingCapitalInvestment;
+                              }
+                            }
+                          }
+                          const interestPerKg =
+                            totalWeight > 0
+                              ? (totalInvestment *
+                                  scenario.finance.costOfDebtPct) /
+                                totalWeight
+                              : 0;
+
+                          // PBT = EBIT - Interest
+                          return ebit - interestPerKg;
+                        },
+                      ],
+                      [
+                        "PAT",
+                        (i: number) => {
+                          const ebitda =
+                            calc.weightedAvgPricePerKg[i]?.ebitdaPerKg || 0;
+                          // Calculate total depreciation amount across all SKUs for this year
+                          const bySku = calc.bySku || [];
+                          let totalDepreciationAmount = 0;
+                          let totalWeight = 0;
+
+                          for (const s of bySku) {
+                            const vkg = s.volumes[i]?.weightKg || 0;
+                            if (vkg > 0) {
+                              // Find the corresponding SKU in scenario to get ops data
+                              const sku = scenario.skus.find(
+                                (sku) => sku.id === s.skuId
+                              );
+                              if (sku) {
+                                const skuDepreciation =
+                                  calculateTotalDepreciation(sku);
+                                // Add the total depreciation amount (not multiplied by weight)
+                                totalDepreciationAmount += skuDepreciation;
+                                totalWeight += vkg;
+                              }
+                            }
+                          }
+
+                          // Depreciation per kg = Total depreciation amount / Total weight
+                          const depreciationPerKg =
+                            totalWeight > 0
+                              ? totalDepreciationAmount / totalWeight
+                              : 0;
+
+                          const ebit = ebitda - depreciationPerKg;
+
+                          // Calculate interest per kg
+                          let totalInvestment = 0;
+                          for (const s of bySku) {
+                            const vkg = s.volumes[i]?.weightKg || 0;
+                            if (vkg > 0) {
+                              const sku = scenario.skus.find(
+                                (sku) => sku.id === s.skuId
+                              );
+                              if (sku) {
+                                const totalCapex =
+                                  (sku.capex.machineCost || 0) +
+                                  (sku.npd.mouldCost || 0) +
+                                  (sku.capex.infraCost || 0);
+                                const workingCapitalDays =
+                                  sku.capex.workingCapitalDays || 0;
+                                const yearRevenue =
+                                  calc.pnl[i]?.revenueNet || 0;
+                                const workingCapitalInvestment =
+                                  yearRevenue * (workingCapitalDays / 365);
+                                totalInvestment +=
+                                  totalCapex + workingCapitalInvestment;
+                              }
+                            }
+                          }
+                          const interestPerKg =
+                            totalWeight > 0
+                              ? (totalInvestment *
+                                  scenario.finance.costOfDebtPct) /
+                                totalWeight
+                              : 0;
+
+                          const pbt = ebit - interestPerKg;
+                          const tax =
+                            pbt * scenario.finance.corporateTaxRatePct;
+                          // PAT = PBT - Tax
+                          return pbt - tax;
+                        },
+                      ],
                     ] as const;
                     return rows.map(([label, getter]) => (
                       <tr
@@ -1120,8 +1560,172 @@ export default function MultiSkuEditor({
                           return ebitda - depreciation;
                         },
                       ],
-                      // ["PBT", (y: (typeof calc.pnl)[number]) => y.pbt],
-                      // ["PAT", (y: (typeof calc.pnl)[number]) => y.pat],
+                      [
+                        "Interest",
+                        (y: (typeof calc.pnl)[number]) => {
+                          // Calculate total investment across all SKUs
+                          const totalCapex = scenario.skus.reduce(
+                            (total, sku) => {
+                              return (
+                                total +
+                                (sku.capex.machineCost || 0) +
+                                (sku.npd.mouldCost || 0) +
+                                (sku.capex.infraCost || 0)
+                              );
+                            },
+                            0
+                          );
+
+                          // Working capital investment = Total revenue * WC Days
+                          const workingCapitalDays = Math.max(
+                            0,
+                            ...scenario.skus.map(
+                              (s) => s.capex.workingCapitalDays || 0
+                            )
+                          );
+                          const workingCapitalInvestment =
+                            y.revenueNet * (workingCapitalDays / 365);
+
+                          // Total investment = Total capex + working capital investment
+                          const totalInvestment =
+                            totalCapex + workingCapitalInvestment;
+
+                          // Interest = Total investment * Cost of Debt
+                          return (
+                            totalInvestment * scenario.finance.costOfDebtPct
+                          );
+                        },
+                      ],
+                      [
+                        "PBT",
+                        (y: (typeof calc.pnl)[number]) => {
+                          const ebitda = y.ebitda;
+                          // Calculate total depreciation across all SKUs for this year
+                          const depreciation = scenario.skus.reduce(
+                            (total, sku) => {
+                              return total + calculateTotalDepreciation(sku);
+                            },
+                            0
+                          );
+                          const ebit = ebitda - depreciation;
+
+                          // Calculate interest
+                          const totalCapex = scenario.skus.reduce(
+                            (total, sku) => {
+                              return (
+                                total +
+                                (sku.capex.machineCost || 0) +
+                                (sku.npd.mouldCost || 0) +
+                                (sku.capex.infraCost || 0)
+                              );
+                            },
+                            0
+                          );
+                          const workingCapitalDays = Math.max(
+                            0,
+                            ...scenario.skus.map(
+                              (s) => s.capex.workingCapitalDays || 0
+                            )
+                          );
+                          const workingCapitalInvestment =
+                            y.revenueNet * (workingCapitalDays / 365);
+                          const totalInvestment =
+                            totalCapex + workingCapitalInvestment;
+                          const interest =
+                            totalInvestment * scenario.finance.costOfDebtPct;
+
+                          // PBT = EBIT - Interest
+                          return ebit - interest;
+                        },
+                      ],
+                      [
+                        "Tax",
+                        (y: (typeof calc.pnl)[number]) => {
+                          const ebitda = y.ebitda;
+                          // Calculate total depreciation across all SKUs for this year
+                          const depreciation = scenario.skus.reduce(
+                            (total, sku) => {
+                              return total + calculateTotalDepreciation(sku);
+                            },
+                            0
+                          );
+                          const ebit = ebitda - depreciation;
+
+                          // Calculate interest
+                          const totalCapex = scenario.skus.reduce(
+                            (total, sku) => {
+                              return (
+                                total +
+                                (sku.capex.machineCost || 0) +
+                                (sku.npd.mouldCost || 0) +
+                                (sku.capex.infraCost || 0)
+                              );
+                            },
+                            0
+                          );
+                          const workingCapitalDays = Math.max(
+                            0,
+                            ...scenario.skus.map(
+                              (s) => s.capex.workingCapitalDays || 0
+                            )
+                          );
+                          const workingCapitalInvestment =
+                            y.revenueNet * (workingCapitalDays / 365);
+                          const totalInvestment =
+                            totalCapex + workingCapitalInvestment;
+                          const interest =
+                            totalInvestment * scenario.finance.costOfDebtPct;
+
+                          const pbt = ebit - interest;
+                          // Tax = Tax Rate × PBT
+                          return pbt * scenario.finance.corporateTaxRatePct;
+                        },
+                      ],
+                      [
+                        "PAT",
+                        (y: (typeof calc.pnl)[number]) => {
+                          const ebitda = y.ebitda;
+                          // Calculate total depreciation across all SKUs for this year
+                          const depreciation = scenario.skus.reduce(
+                            (total, sku) => {
+                              return total + calculateTotalDepreciation(sku);
+                            },
+                            0
+                          );
+                          const ebit = ebitda - depreciation;
+
+                          // Calculate interest
+                          const totalCapex = scenario.skus.reduce(
+                            (total, sku) => {
+                              return (
+                                total +
+                                (sku.capex.machineCost || 0) +
+                                (sku.npd.mouldCost || 0) +
+                                (sku.capex.infraCost || 0)
+                              );
+                            },
+                            0
+                          );
+                          const workingCapitalDays = Math.max(
+                            0,
+                            ...scenario.skus.map(
+                              (s) => s.capex.workingCapitalDays || 0
+                            )
+                          );
+                          const workingCapitalInvestment =
+                            y.revenueNet * (workingCapitalDays / 365);
+                          const totalInvestment =
+                            totalCapex + workingCapitalInvestment;
+                          const interest =
+                            totalInvestment * scenario.finance.costOfDebtPct;
+
+                          const pbt = ebit - interest;
+                          const tax =
+                            pbt * scenario.finance.corporateTaxRatePct;
+                          // PAT = PBT - Tax
+                          return pbt - tax;
+                        },
+                      ],
                     ] as const
                   ).map(([label, getter]) => (
                     <tr

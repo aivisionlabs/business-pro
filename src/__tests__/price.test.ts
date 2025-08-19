@@ -11,7 +11,6 @@ describe('Price Calculations', () => {
           valueAddPerKg: 20,
           packagingPerKg: 15,
           freightOutPerKg: 8,
-          mouldAmortPerKg: 1,
           conversionPerKg: 25.80,
           totalPerKg: 0,
         },
@@ -26,17 +25,6 @@ describe('Price Calculations', () => {
     });
 
     it('should calculate total per kg correctly', () => {
-      const perKg: PriceComponentsPerKg = {
-        rmPerKg: 80,
-        mbPerKg: 120,
-        valueAddPerKg: 20,
-        packagingPerKg: 15,
-        freightOutPerKg: 8,
-        mouldAmortPerKg: 1,
-        conversionPerKg: 25.80,
-        totalPerKg: 0,
-      };
-
       // Calculate total manually
       const expectedTotal = 80 + 120 + 20 + 15 + 8 + 1 + 25.80;
       expect(expectedTotal).toBe(269.80);
@@ -127,7 +115,6 @@ describe('Price Calculations', () => {
           valueAddPerKg: 20,
           packagingPerKg: 15,
           freightOutPerKg: 8,
-          mouldAmortPerKg: 1,
           conversionPerKg: 25.80,
           totalPerKg: 0,
         },
@@ -140,7 +127,6 @@ describe('Price Calculations', () => {
       expect(testPrice.perKg.valueAddPerKg).toBeGreaterThanOrEqual(0);
       expect(testPrice.perKg.packagingPerKg).toBeGreaterThanOrEqual(0);
       expect(testPrice.perKg.freightOutPerKg).toBeGreaterThanOrEqual(0);
-      expect(testPrice.perKg.mouldAmortPerKg).toBeGreaterThanOrEqual(0);
       expect(testPrice.perKg.conversionPerKg).toBeGreaterThanOrEqual(0);
 
       // Price per piece should be positive
@@ -156,7 +142,6 @@ describe('Price Calculations', () => {
           valueAddPerKg: 0, // No value add
           packagingPerKg: 0, // No packaging
           freightOutPerKg: 0, // No freight
-          mouldAmortPerKg: 0, // No mould amortization
           conversionPerKg: 25.80,
           totalPerKg: 0,
         },
@@ -168,7 +153,6 @@ describe('Price Calculations', () => {
       expect(testPrice.perKg.valueAddPerKg).toBe(0);
       expect(testPrice.perKg.packagingPerKg).toBe(0);
       expect(testPrice.perKg.freightOutPerKg).toBe(0);
-      expect(testPrice.perKg.mouldAmortPerKg).toBe(0);
     });
   });
 
@@ -182,7 +166,6 @@ describe('Price Calculations', () => {
           valueAddPerKg: 20,
           packagingPerKg: 15,
           freightOutPerKg: 8,
-          mouldAmortPerKg: 1,
           conversionPerKg: 25.80,
           totalPerKg: 0,
         },
@@ -217,7 +200,6 @@ describe('Price Calculations', () => {
           valueAddPerKg: 20,
           packagingPerKg: 15,
           freightOutPerKg: 8,
-          mouldAmortPerKg: 1,
           conversionPerKg: 25.80,
           totalPerKg: 0,
         },
@@ -253,7 +235,6 @@ describe('Price Calculations', () => {
             valueAddPerKg: 20,
             packagingPerKg: 15,
             freightOutPerKg: 8,
-            mouldAmortPerKg: 1,
             conversionPerKg: 25.80,
             totalPerKg: 0,
           },
@@ -289,7 +270,6 @@ describe('Price Calculations', () => {
           valueAddPerKg: 0.0001,
           packagingPerKg: 0.0005,
           freightOutPerKg: 0.0003,
-          mouldAmortPerKg: 0.0001,
           conversionPerKg: 0.001,
           totalPerKg: 0,
         },
@@ -316,7 +296,6 @@ describe('Price Calculations', () => {
           valueAddPerKg: 500000,
           packagingPerKg: 300000,
           freightOutPerKg: 100000,
-          mouldAmortPerKg: 50000,
           conversionPerKg: 1000000,
           totalPerKg: 0,
         },

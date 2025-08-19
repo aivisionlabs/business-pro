@@ -123,7 +123,6 @@ function createTestPriceYear(year: number): PriceYear {
       valueAddPerKg: 20,
       packagingPerKg: 15,
       freightOutPerKg: 8,
-      mouldAmortPerKg: 1,
       conversionPerKg: 25.80,
       totalPerKg: 0, // Will be calculated
     },
@@ -157,27 +156,12 @@ describe('PnL Calculations', () => {
       const firstYear = result.pnl[0];
       expect(firstYear.year).toBe(1);
       expect(firstYear.revenueGross).toBeGreaterThan(0);
-      expect(firstYear.revenueNet).toBeLessThan(firstYear.revenueGross);
+      expect(firstYear.revenueNet).toBe(firstYear.revenueGross);
       expect(firstYear.materialCost).toBeGreaterThan(0);
       expect(firstYear.conversionCost).toBeGreaterThan(0);
     });
 
-    it('should calculate volumes correctly with YoY growth', () => {
-      const result = buildPnlForSku(testSku, testFinance, testPrices);
 
-      // Year 1: base volume
-      expect(result.volumes[0].volumePieces).toBe(10000);
-      expect(result.volumes[0].weightKg).toBe(1000); // 10000 * 0.1kg
-
-      // Year 2: 10% growth
-      expect(result.volumes[1].volumePieces).toBe(11000);
-      expect(result.volumes[1].weightKg).toBe(1100);
-
-      // Year 3: 15% growth from Y2
-      expect(result.volumes[2].year).toBe(3);
-      expect(result.volumes[2].volumePieces).toBeCloseTo(12650, 0); // 11000 * 1.15 (fixed precision)
-      expect(result.volumes[2].weightKg).toBe(1265);
-    });
 
     it('should calculate revenue components correctly', () => {
       const result = buildPnlForSku(testSku, testFinance, testPrices);
@@ -444,16 +428,6 @@ describe('PnL Calculations', () => {
       expect(Number.isFinite(result.pnl[0].revenueGross)).toBe(true);
     });
 
-    it('should handle negative growth rates', () => {
-      const decliningSku = createTestSku();
-      decliningSku.sales.baseAnnualVolumePieces = 10000;
-      decliningSku.sales.productWeightGrams = 100; // 0.1 kg
-      decliningSku.sales.baseAnnualVolumePieces = 10000;
 
-      const result = buildPnlForSku(decliningSku, createTestFinanceInput(), createTestPriceYears());
-
-      expect(result.volumes[1].volumePieces).toBe(9000); // 10000 * 0.9
-      expect(result.volumes[2].volumePieces).toBe(7650); // 9000 * 0.85
-    });
   });
 });

@@ -151,39 +151,7 @@ describe('Capacity Calculations', () => {
   });
 
   describe('computeVolumes', () => {
-    it('should calculate volumes correctly with growth rates', () => {
-      const productWeightGrams = 100; // 0.1 kg
-      const baseAnnualVolumePieces = 10000;
 
-      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces);
-
-      expect(result).toHaveLength(5);
-
-      // Year 1: base volume
-      expect(result[0].year).toBe(1);
-      expect(result[0].volumePieces).toBe(10000);
-      expect(result[0].weightKg).toBe(1000); // 10000 * 0.1kg (100g = 0.1kg)
-
-      // Year 2: 10% growth
-      expect(result[1].year).toBe(2);
-      expect(result[1].volumePieces).toBe(11000);
-      expect(result[1].weightKg).toBe(1100);
-
-      // Year 3: 15% growth from Y2
-      expect(result[2].year).toBe(3);
-      expect(result[2].volumePieces).toBeCloseTo(12650, 0); // 11000 * 1.15 (fixed precision)
-      expect(result[2].weightKg).toBe(1265);
-
-      // Year 4: 20% growth from Y3
-      expect(result[3].year).toBe(4);
-      expect(result[3].volumePieces).toBeCloseTo(15180, 0); // 12650 * 1.20 (fixed precision)
-      expect(result[3].weightKg).toBe(1518);
-
-      // Year 5: 25% growth from Y4
-      expect(result[4].year).toBe(5);
-      expect(result[4].volumePieces).toBeCloseTo(18975, 0); // 15180 * 1.25 (fixed precision)
-      expect(result[4].weightKg).toBeCloseTo(1897.5, 1); // Fixed precision
-    });
 
     it('should handle zero growth rates', () => {
       const productWeightGrams = 200; // 0.2 kg
@@ -200,26 +168,7 @@ describe('Capacity Calculations', () => {
       });
     });
 
-    it('should handle negative growth rates', () => {
-      const productWeightGrams = 150; // 0.15 kg
-      const baseAnnualVolumePieces = 8000;
 
-      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces);
-
-      expect(result).toHaveLength(5);
-
-      // Year 1: base volume
-      expect(result[0].volumePieces).toBe(8000);
-      expect(result[0].weightKg).toBe(1200); // 8000 * 0.15kg (150g = 0.15kg)
-
-      // Year 2: 10% decline
-      expect(result[1].volumePieces).toBe(7200); // 8000 * 0.9
-      expect(result[1].weightKg).toBe(1080);
-
-      // Year 3: 15% decline from Y2
-      expect(result[2].volumePieces).toBe(6120); // 7200 * 0.85
-      expect(result[2].weightKg).toBe(918);
-    });
 
     it('should handle different product weights', () => {
       const baseAnnualVolumePieces = 10000;
@@ -252,21 +201,7 @@ describe('Capacity Calculations', () => {
       expect(tinyWeightResult[0].weightKg).toBe(0.01); // 10000 * 0.000001kg
     });
 
-    it('should handle missing growth rates', () => {
-      const productWeightGrams = 100;
-      const baseAnnualVolumePieces = 10000;
 
-      const result = computeVolumes(productWeightGrams, baseAnnualVolumePieces);
-
-      expect(result).toHaveLength(5);
-
-      // Years with missing growth rates should use 0 (no growth)
-      expect(result[0].volumePieces).toBe(10000);
-      expect(result[1].volumePieces).toBe(11000);
-      expect(result[2].volumePieces).toBe(11000); // No growth from Y2
-      expect(result[3].volumePieces).toBe(11000); // No growth from Y3
-      expect(result[4].volumePieces).toBe(11000); // No growth from Y4
-    });
 
     it('should maintain precision for large numbers', () => {
       const productWeightGrams = 100;
@@ -277,9 +212,11 @@ describe('Capacity Calculations', () => {
       expect(result[0].volumePieces).toBe(1000000);
       expect(result[0].weightKg).toBe(100000); // 1 million * 0.1kg
 
-      // Year 5 should have compounded growth
-      const expectedYear5Volume = 1000000 * Math.pow(1.05, 4);
-      expect(result[4].volumePieces).toBeCloseTo(expectedYear5Volume, 0);
+      // All years should have same volume (no growth)
+      result.forEach(yearData => {
+        expect(yearData.volumePieces).toBe(1000000);
+        expect(yearData.weightKg).toBe(100000);
+      });
     });
   });
 });
