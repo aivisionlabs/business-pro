@@ -14,7 +14,7 @@ describe('Capacity Calculations', () => {
         plant: 'Test Plant',
         polymer: 'PP',
         masterbatch: 'Black',
-        mouldCost: 50000,
+
       };
 
       testOps = {

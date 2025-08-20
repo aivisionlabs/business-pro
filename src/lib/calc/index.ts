@@ -112,12 +112,12 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
   const prices: PriceYear[] = buildWeightedAvgPricePerKg(bySku, volumes);
 
   // Aggregate capex and depreciation schedule
-  const capex0 = bcase.skus.reduce((sum, s) => sum + (s.capex.machineCost || 0) + (s.npd.mouldCost || 0) + (s.capex.infraCost || 0), 0);
+  const capex0 = bcase.skus.reduce((sum, s) => sum + (s.capex.machineCost || 0) + (s.capex.infraCost || 0), 0);
   const annualDepreciationByYear = Array.from({ length: years }, () => {
     return bcase.skus.reduce((sum, s) => {
       // Depreciation calculation using only the 6 required fields
       const machineInvestment = s.capex.machineCost || 0;
-      const mouldInvestment = s.npd.mouldCost || 0;
+      const mouldInvestment = 0;
       const infraInvestment = s.capex.infraCost || 0;
 
       const machineLife = s.capex.usefulLifeMachineYears || 15; // Default 15 years
@@ -148,5 +148,3 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
 
   return { volumes, prices, pnl, weightedAvgPricePerKg, cashflow, returns, bySku };
 }
-
-

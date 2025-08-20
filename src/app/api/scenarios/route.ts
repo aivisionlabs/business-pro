@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       },
       capex: {
         machineCost: 0,
-        mouldCost: 0,
+
         infraCost: 0,
         workingCapitalDays: 0,
         usefulLifeMachineYears: 15,

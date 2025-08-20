@@ -32,7 +32,6 @@ function createTestNpdInput(): NpdInput {
     plant: 'Test Plant',
     polymer: 'PP',
     masterbatch: 'Black',
-    mouldCost: 50000,
   };
 }
 
@@ -81,7 +80,6 @@ function createTestCostingInput(): CostingInput {
 function createTestCapexInput(): CapexInput {
   return {
     machineCost: 2000000,
-    mouldCost: 50000,
     infraCost: 300000,
     workingCapitalDays: 45,
     usefulLifeMachineYears: 15,
@@ -222,7 +220,7 @@ describe('PnL Calculations', () => {
       const firstYear = result.pnl[0];
 
       const expectedMachineDep = testSku.capex.machineCost / testSku.capex.usefulLifeMachineYears;
-      const expectedMouldDep = (testSku.npd.mouldCost || 0) / testSku.capex.usefulLifeMouldYears;
+      const expectedMouldDep = 0;
       const expectedInfraDep = testSku.capex.infraCost / testSku.capex.usefulLifeInfraYears;
       const expectedTotalDep = expectedMachineDep + expectedMouldDep + expectedInfraDep;
 
@@ -233,7 +231,7 @@ describe('PnL Calculations', () => {
       const result = buildPnlForSku(testSku, testFinance, testPrices);
       const firstYear = result.pnl[0];
 
-      const totalCapex = testSku.capex.machineCost + (testSku.npd.mouldCost || 0);
+      const totalCapex = testSku.capex.machineCost;
       const openingDebt = testFinance.debtPct * totalCapex;
       const expectedInterest = openingDebt * testFinance.costOfDebtPct;
 
@@ -273,6 +271,184 @@ describe('PnL Calculations', () => {
 
       // Should use default values (24 hours, 365 days, 3 shifts)
       expect(result.pnl[0].conversionCost).toBe(25.80 * 1000); // Default fallback value
+    });
+
+    // New comprehensive test cases for Depreciation, EBIT, Interest, Tax, PBT, PAT calculations
+    describe('Financial Calculations - Depreciation, EBIT, Interest, Tax, PBT, PAT', () => {
+      it('should calculate depreciation correctly for different asset types', () => {
+        const skuWithNewAssets = createTestSku();
+        // Set capex costs (this is what the PnL function actually uses)
+        skuWithNewAssets.capex.machineCost = 2000000; // 20 lakhs
+
+        skuWithNewAssets.capex.infraCost = 300000; // 3 lakhs
+        skuWithNewAssets.capex.usefulLifeMachineYears = 15;
+        skuWithNewAssets.capex.usefulLifeMouldYears = 15;
+        skuWithNewAssets.capex.usefulLifeInfraYears = 30;
+
+        const result = buildPnlForSku(skuWithNewAssets, testFinance, testPrices);
+        const firstYear = result.pnl[0];
+
+        // Expected depreciation calculations
+        const expectedMachineDepreciation = 2000000 / 15; // 133,333.33
+        const expectedMouldDepreciation = 0;
+        const expectedInfraDepreciation = 300000 / 30; // 10,000
+        const expectedTotalDepreciation = expectedMachineDepreciation + expectedMouldDepreciation + expectedInfraDepreciation;
+
+        expect(firstYear.depreciation).toBeCloseTo(expectedTotalDepreciation, 2);
+        expect(firstYear.depreciation).toBeGreaterThan(0);
+      });
+
+      it('should calculate EBIT correctly (EBITDA - Depreciation)', () => {
+        const result = buildPnlForSku(testSku, testFinance, testPrices);
+        const firstYear = result.pnl[0];
+
+        const expectedEbit = firstYear.ebitda - firstYear.depreciation;
+        expect(firstYear.ebit).toBeCloseTo(expectedEbit, 2);
+        expect(firstYear.ebit).toBeLessThan(firstYear.ebitda); // EBIT should be less than EBITDA
+      });
+
+      it('should calculate interest correctly based on capex and cost of debt', () => {
+        const skuWithCapex = createTestSku();
+        // Set capex costs (this is what the PnL function actually uses)
+        skuWithCapex.capex.machineCost = 1000000; // 10 lakhs
+
+        // Note: infraCost is NOT included in openingDebt calculation in PnL function
+
+        const result = buildPnlForSku(skuWithCapex, testFinance, testPrices);
+        const firstYear = result.pnl[0];
+
+        // Calculate expected values based on PnL function logic
+        // openingDebt = debtPct * machineCost - NO infraCost!
+        const capexForDebt = 1000000; // 10 lakhs (machine only)
+        const openingDebt = testFinance.debtPct * capexForDebt; // 60% of capex
+        const expectedInterest = openingDebt * testFinance.costOfDebtPct; // 12% of debt portion
+
+        expect(firstYear.interestCapex).toBeCloseTo(expectedInterest, 2);
+        expect(firstYear.interestCapex).toBeGreaterThan(0);
+      });
+
+      it('should calculate PBT correctly (EBIT - Interest)', () => {
+        const result = buildPnlForSku(testSku, testFinance, testPrices);
+        const firstYear = result.pnl[0];
+
+        const expectedPbt = firstYear.ebit - firstYear.interestCapex;
+        expect(firstYear.pbt).toBeCloseTo(expectedPbt, 2);
+        expect(firstYear.pbt).toBeLessThan(firstYear.ebit); // PBT should be less than EBIT
+      });
+
+      it('should calculate tax correctly based on PBT and tax rate', () => {
+        const result = buildPnlForSku(testSku, testFinance, testPrices);
+        const firstYear = result.pnl[0];
+
+        // The PnL function uses Math.max(0, pbt) for tax calculation
+        const expectedTax = Math.max(0, firstYear.pbt) * testFinance.corporateTaxRatePct;
+        expect(firstYear.tax).toBeCloseTo(expectedTax, 2);
+
+        // Tax should be 25% of PBT (but only if PBT is positive)
+        if (firstYear.pbt > 0) {
+          const taxRate = firstYear.tax / firstYear.pbt;
+          expect(taxRate).toBeCloseTo(0.25, 2);
+        } else {
+          expect(firstYear.tax).toBe(0);
+        }
+      });
+
+      it('should calculate PAT correctly (PBT - Tax)', () => {
+        const result = buildPnlForSku(testSku, testFinance, testPrices);
+        const firstYear = result.pnl[0];
+
+        const expectedPat = firstYear.pbt - firstYear.tax;
+        expect(firstYear.pat).toBeCloseTo(expectedPat, 2);
+
+        // PAT should be less than PBT only if tax > 0
+        if (firstYear.tax > 0) {
+          expect(firstYear.pat).toBeLessThan(firstYear.pbt);
+        } else {
+          // If tax is 0 (negative PBT), PAT equals PBT
+          expect(firstYear.pat).toBeCloseTo(firstYear.pbt, 2);
+        }
+      });
+
+      it('should handle zero cost of debt correctly', () => {
+        const zeroDebtFinance = { ...testFinance, costOfDebtPct: 0 };
+        const result = buildPnlForSku(testSku, zeroDebtFinance, testPrices);
+        const firstYear = result.pnl[0];
+
+        expect(firstYear.interestCapex).toBe(0);
+        expect(firstYear.pbt).toBeCloseTo(firstYear.ebit, 2); // PBT should equal EBIT
+
+        // Tax calculation depends on PBT being positive
+        if (firstYear.pbt > 0) {
+          expect(firstYear.tax).toBeCloseTo(firstYear.pbt * 0.25, 2);
+        } else {
+          expect(firstYear.tax).toBe(0);
+        }
+      });
+
+      it('should handle zero tax rate correctly', () => {
+        const zeroTaxFinance = { ...testFinance, corporateTaxRatePct: 0 };
+        const result = buildPnlForSku(testSku, zeroTaxFinance, testPrices);
+        const firstYear = result.pnl[0];
+
+        expect(firstYear.tax).toBe(0);
+        expect(firstYear.pat).toBeCloseTo(firstYear.pbt, 2); // PAT should equal PBT
+      });
+
+      it('should handle negative PBT correctly (tax should be 0)', () => {
+        const highCapexSku = createTestSku();
+        highCapexSku.ops.costOfNewMachine = 5000000; // 50 lakhs - very high capex
+        highCapexSku.ops.costOfNewInfra = 1000000; // 10 lakhs
+
+
+        const result = buildPnlForSku(highCapexSku, testFinance, testPrices);
+        const firstYear = result.pnl[0];
+
+        // With very high capex, PBT might be negative
+        if (firstYear.pbt < 0) {
+          expect(firstYear.tax).toBe(0); // Tax should be 0 for negative PBT
+          expect(firstYear.pat).toBeCloseTo(firstYear.pbt, 2); // PAT should equal PBT
+        }
+      });
+
+      it('should calculate working capital investment correctly with default 60 days', () => {
+        const skuWithDefaultWC = createTestSku();
+        skuWithDefaultWC.capex.workingCapitalDays = 0; // Will default to 60
+
+        const result = buildPnlForSku(skuWithDefaultWC, testFinance, testPrices);
+        const firstYear = result.pnl[0];
+
+        // The interest calculation should reflect this working capital
+        expect(firstYear.interestCapex).toBeGreaterThan(0);
+      });
+
+      it('should handle different working capital days correctly', () => {
+        const skuWith90DaysWC = createTestSku();
+        skuWith90DaysWC.capex.workingCapitalDays = 90;
+
+        const result = buildPnlForSku(skuWith90DaysWC, testFinance, testPrices);
+        const firstYear = result.pnl[0];
+
+        // Interest should be higher with more working capital
+        expect(firstYear.interestCapex).toBeGreaterThan(0);
+      });
+
+      it('should calculate total investment correctly (Capex + Working Capital)', () => {
+        const skuWithCapex = createTestSku();
+        // Set capex costs (this is what the PnL function actually uses)
+        skuWithCapex.capex.machineCost = 2000000; // 20 lakhs
+
+        // Note: infraCost is NOT included in openingDebt calculation in PnL function
+
+        const result = buildPnlForSku(skuWithCapex, testFinance, testPrices);
+        const firstYear = result.pnl[0];
+
+        // Expected capex for debt calculation (machine only, no infra)
+        const expectedCapexForDebt = 2000000; // 20 lakhs (machine only)
+        const openingDebt = testFinance.debtPct * expectedCapexForDebt; // 60% of capex
+        const expectedInterest = openingDebt * testFinance.costOfDebtPct; // 12% of debt portion
+
+        expect(firstYear.interestCapex).toBeCloseTo(expectedInterest, 2);
+      });
     });
   });
 

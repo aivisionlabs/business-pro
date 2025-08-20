@@ -50,7 +50,7 @@ Authoritative spec is aligned to the workbook discussion captured here: [Workboo
 - `rmInflationPct[5]`, `conversionInflationPct[5]`
 
 ### Capex
-- `machineCost`, `mouldCost`, `workingCapitalDays`
+- `machineCost`, `workingCapitalDays`
 - `usefulLifeMachineYears`, `usefulLifeMouldYears` (≥ 1)
 
 ### Finance
@@ -135,8 +135,8 @@ Authoritative spec is aligned to the workbook discussion captured here: [Workboo
 - EBITDA: \(\text{grossMargin} - \text{plantSgaCost} - \text{corpSgaCost}\)
 
 ### Depreciation, interest, tax, PAT
-- Depreciation per year: \(\frac{\text{machineCost}}{\text{usefulLifeMachineYears}} + \frac{\text{mouldCost}}{\text{usefulLifeMouldYears}}\)
-- Opening debt: \(\text{debtPct} \times (\text{machineCost} + \text{mouldCost})\)
+- Depreciation per year: \(\frac{\text{machineCost}}{\text{usefulLifeMachineYears}}\)
+- Opening debt: \(\text{debtPct} \times \text{machineCost}\)
 - Interest (capex): \(\text{openingDebt} \times \text{costOfDebtPct}\) (interest-only in MVP)
 - EBIT: \(\text{EBITDA} - \text{depreciation}\)
 - PBT: \(\text{EBIT} - \text{interestCapex}\)
@@ -151,7 +151,7 @@ Authoritative spec is aligned to the workbook discussion captured here: [Workboo
 ## Working capital and cash flows (case level)
 - Net Working Capital: \(\text{NWC}(t) = \frac{\text{workingCapitalDays}}{365} \times \text{revenueNet}(t)\)
 - Change in NWC: \(\Delta \text{NWC}(t) = \text{NWC}(t) - \text{NWC}(t-1)\), with \(\text{NWC}(0) = 0\)
-- Capex(0): \(\text{machineCost} + \text{mouldCost}\); Capex(t>0)=0 in MVP
+- Capex(0): \(\text{machineCost}\); Capex(t>0)=0 in MVP
 - Free Cash Flow: \(\text{FCF}(t) = \text{EBIT}(t) \times (1 - \text{taxRate}) + \text{depreciation}(t) - \Delta \text{NWC}(t) - \text{Capex}(t)\)
 
 ## Returns (case level)

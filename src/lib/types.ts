@@ -25,7 +25,6 @@ export type NpdInput = {
   plant: string; // key to PlantMaster.plant
   polymer: string;
   masterbatch: string;
-  mouldCost?: number; // moved under NPD as per requirements
 };
 
 export type OpsInput = {
@@ -73,7 +72,6 @@ export type CostingInput = {
 
 export type CapexInput = {
   machineCost: number;
-  mouldCost: number;
   infraCost: number;
   workingCapitalDays: number; // days of revenue tied up
   usefulLifeMachineYears: number;
