@@ -151,28 +151,6 @@ export default function MultiSkuEditor({
       }
     }
 
-    // Set default working capital days for SKUs if not already set
-    if (updatedScenario.skus) {
-      updatedScenario.skus = updatedScenario.skus.map((sku) => {
-        if (
-          sku.capex &&
-          (sku.capex.workingCapitalDays === undefined ||
-            sku.capex.workingCapitalDays === null ||
-            sku.capex.workingCapitalDays === 0)
-        ) {
-          needsSave = true;
-          return {
-            ...sku,
-            capex: {
-              ...sku.capex,
-              workingCapitalDays: 60,
-            },
-          };
-        }
-        return sku;
-      });
-    }
-
     setScenario(updatedScenario);
 
     // If defaults were applied, save to database
@@ -215,7 +193,6 @@ export default function MultiSkuEditor({
       npd: { ...base.npd },
       ops: { ...base.ops },
       costing: { ...base.costing },
-      capex: { ...base.capex },
       altConversion: { ...base.altConversion },
       plantMaster: { ...base.plantMaster },
     };

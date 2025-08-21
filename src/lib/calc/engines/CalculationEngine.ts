@@ -479,18 +479,14 @@ export class CalculationEngine {
    */
   static buildRoceByYear(
     pnl: PnlYear[],
-    capex0: number,
     annualDepreciationByYear: number[],
     cashflows: any[]
   ): { year: number; roce: number; netBlock: number }[] {
     return pnl.map((y, idx) => {
-      const accumulatedDep = annualDepreciationByYear
-        .slice(0, idx + 1)
-        .reduce((a, b) => a + b, 0);
-      const netBlock = Math.max(0, capex0 - accumulatedDep);
-      const roce = (y.ebit || 0) / Math.max(1e-9, netBlock +
+      // Calculate RoCE based on EBIT and working capital only (removed capex dependency)
+      const roce = (y.ebit || 0) / Math.max(1e-9,
         (cashflows.find((c) => c.year === y.year)?.nwc || 0));
-      return { year: y.year, roce, netBlock };
+      return { year: y.year, roce, netBlock: 0 }; // netBlock set to 0 since capex is removed
     });
   }
 

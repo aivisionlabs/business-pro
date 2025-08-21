@@ -1059,7 +1059,7 @@ export async function tool_generatePortfolioReport(args: { caseId: string; repor
         },
         financialHighlights: {
           totalInvestment: scenario.skus.reduce((sum, sku) =>
-            sum + sku.capex.machineCost + sku.capex.infraCost, 0),
+            sum + (sku.ops.costOfNewMachine || 0) + (sku.ops.costOfNewInfra || 0), 0),
           projectedRevenueY1: calc.pnl[0]?.revenueNet || 0,
           projectedEbitdaY1: calc.pnl[0]?.ebitda || 0,
           npv: calc.returns.npv,
@@ -1069,7 +1069,7 @@ export async function tool_generatePortfolioReport(args: { caseId: string; repor
         keyInsights: [
           `Portfolio consists of ${scenario.skus.length} SKUs across ${new Set(scenario.skus.map(s => s.plantMaster.plant)).size} plants`,
           `Total investment required: ₹${scenario.skus.reduce((sum, sku) =>
-            sum + sku.capex.machineCost + sku.capex.infraCost, 0).toLocaleString()}`,
+            sum + (sku.ops.costOfNewMachine || 0) + (sku.ops.costOfNewInfra || 0), 0).toLocaleString()}`,
           `Projected IRR: ${calc.returns.irr ? (calc.returns.irr * 100).toFixed(1) + '%' : 'N/A'}`,
           `Payback period: ${calc.returns.paybackYears ? calc.returns.paybackYears.toFixed(1) + ' years' : 'N/A'}`
         ]
@@ -1148,12 +1148,7 @@ function resolveParameterPath(parameter: string): string {
     'workingDaysPerYear': 'ops.workingDaysPerYear',
     'shiftsPerDay': 'ops.shiftsPerDay',
     'machineAvailable': 'ops.machineAvailable',
-
-    // Capex parameters
-    'machineCost': 'capex.machineCost',
-    'workingCapitalDays': 'capex.workingCapitalDays',
-    'usefulLifeMachineYears': 'capex.usefulLifeMachineYears',
-    'usefulLifeMouldYears': 'capex.usefulLifeMouldYears'
+    'workingCapitalDays': 'ops.workingCapitalDays',
   };
 
   return parameterMap[parameter] || `sales.${parameter}`; // Default to sales if not found
@@ -1383,7 +1378,7 @@ export async function POST(req: NextRequest) {
               properties: {
                 scenario: {
                   type: "OBJECT",
-                  description: "The complete scenario object with sales, npd, ops, costing, capex, and finance data"
+                  description: "The complete scenario object with sales, npd, ops, costing, and finance data"
                 },
               },
               required: ["scenario"],

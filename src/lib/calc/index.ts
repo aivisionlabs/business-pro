@@ -14,7 +14,7 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
 
   // Validate each SKU has required structure
   bcase.skus.forEach((sku, index) => {
-    if (!sku.sales || !sku.costing || !sku.npd || !sku.ops || !sku.capex || !sku.plantMaster) {
+    if (!sku.sales || !sku.costing || !sku.npd || !sku.ops || !sku.plantMaster) {
       console.error(`SKU ${index} missing required properties:`, sku);
       throw new Error(`SKU ${index} missing required properties`);
     }
@@ -46,22 +46,6 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
 
       const revenueGross = CalculationEngine.buildRevenueGross(p, volumePieces);
       const revenueNet = CalculationEngine.buildRevenueNet(revenueGross);
-
-      const powerCost = CalculationEngine.buildPowerCost(
-        sku.ops,
-        sku.ops.operatingHoursPerDay ?? 24,
-        sku.ops.workingDaysPerYear ?? 365,
-        sku.plantMaster.powerRatePerUnit,
-        weightKg
-      );
-
-      const manpowerCost = CalculationEngine.buildManpowerCost(
-        sku.ops,
-        sku.ops.shiftsPerDay ?? 3,
-        sku.ops.workingDaysPerYear ?? 365,
-        sku.plantMaster.manpowerRatePerShift,
-        weightKg
-      );
 
       const valueAddCost = CalculationEngine.buildValueAddCost(sku, volumePieces);
       const packagingCost = CalculationEngine.buildPackagingCost(sku, weightKg);
@@ -101,8 +85,6 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
         revenueNet,
         materialCost,
         materialMargin,
-        powerCost,
-        manpowerCost,
         valueAddCost,
         packagingCost,
         freightOutCost,
@@ -145,8 +127,6 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
       revenueNet: 0,
       materialCost: 0,
       materialMargin: 0,
-      powerCost: 0,
-      manpowerCost: 0,
       valueAddCost: 0,
       packagingCost: 0,
       freightOutCost: 0,
@@ -173,8 +153,6 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
       acc.revenueNet += y.revenueNet;
       acc.materialCost += y.materialCost;
       acc.materialMargin += y.materialMargin;
-      acc.powerCost += y.powerCost;
-      acc.manpowerCost += y.manpowerCost;
       acc.valueAddCost += y.valueAddCost;
       acc.packagingCost += y.packagingCost;
       acc.freightOutCost += y.freightOutCost;
@@ -204,24 +182,23 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
   // Calculate weighted average prices per kg across all SKUs
   const prices: PriceYear[] = CalculationEngine.buildWeightedAvgPricePerKg(bySku, volumes);
 
-  // Aggregate capex and depreciation schedule
-  const capex0 = bcase.skus.reduce((sum, s) => sum + (s.capex.machineCost || 0) + (s.capex.infraCost || 0), 0);
   const annualDepreciationByYear = Array.from({ length: years }, () => {
     return bcase.skus.reduce((sum, s) => {
       return sum + CalculationEngine.buildTotalDepreciation(s);
     }, 0);
   });
-  const workingCapitalDays = Math.max(
-    0,
-    ...bcase.skus.map((s) => s.capex.workingCapitalDays || 0)
-  );
+
+
+
+  // Calculate working capital days (use max across all SKUs, default to 60)
+  const workingCapitalDays = Math.max(60, ...bcase.skus.map(s => s.ops?.workingCapitalDays || 60));
 
   // Build cashflows and returns using CalculationEngine
   const cashflow = [];
   const taxRate = bcase.finance.corporateTaxRatePct || 0;
 
   // Year 0
-  cashflow.push({ year: 0, nwc: 0, changeInNwc: 0, fcf: -capex0, pv: 0, cumulativeFcf: -capex0 });
+  cashflow.push({ year: 0, nwc: 0, changeInNwc: 0, fcf: 0, pv: 0, cumulativeFcf: 0 });
 
   let prevNwc = 0;
   for (const y of pnl) {
@@ -263,7 +240,7 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
   const paybackYears = CalculationEngine.buildPaybackYears(cashflow);
 
   // RoCE and net block
-  const roceByYear = CalculationEngine.buildRoceByYear(pnl, capex0, annualDepreciationByYear, cashflow);
+  const roceByYear = CalculationEngine.buildRoceByYear(pnl, annualDepreciationByYear, cashflow);
 
   const returns = { wacc, npv, irr: irrValue, paybackYears, roceByYear };
 

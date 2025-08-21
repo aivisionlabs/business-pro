@@ -67,7 +67,6 @@ export type CostingInput = {
   useMbPriceOverride?: boolean; // if false, derive MB cost from resin price
 };
 
-export type CapexInput = Record<string, never>; // Deprecated - all properties moved to OpsInput
 
 export type FinanceInput = {
   includeCorpSGA: boolean;
@@ -90,7 +89,6 @@ export type Sku = {
   npd: NpdInput;
   ops: OpsInput;
   costing: CostingInput;
-  capex: CapexInput;
   altConversion?: AltConversionInput;
   plantMaster: PlantMaster; // plant config selected for this SKU
 };
@@ -133,8 +131,6 @@ export type PnlYear = {
   revenueNet: number;
   materialCost: number;
   materialMargin: number;
-  powerCost: number;
-  manpowerCost: number;
   valueAddCost: number;
   packagingCost: number;
   freightOutCost: number;

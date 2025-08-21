@@ -104,8 +104,6 @@ function createTestSku(): Sku {
       rmInflationPct: [0, 0.05, 0.03, 0.04, 0.02],
       conversionInflationPct: [0, 0.03, 0.02, 0.03, 0.02],
     },
-    // capex section removed - all properties moved to ops
-    capex: {}, // Empty capex object for type compatibility
     plantMaster: {
       powerRatePerUnit: 8,
       manpowerRatePerShift: 2000,
@@ -371,12 +369,12 @@ describe('CalculationEngine', () => {
       const pnl = [createTestPnlYear(1)];
       const annualDepreciationByYear = [143333.33];
       const cashflows = [{ year: 1, nwc: 117123.29 }] as any[];
-      const result = CalculationEngine.buildRoceByYear(pnl, 2000000, annualDepreciationByYear, cashflows);
+      const result = CalculationEngine.buildRoceByYear(pnl, annualDepreciationByYear, cashflows);
 
       expect(result).toHaveLength(1);
       expect(result[0].year).toBe(1);
-      expect(result[0].netBlock).toBeCloseTo(1856666.67, 2); // 2000000 - 143333.33
-      expect(result[0].roce).toBeCloseTo(0.317, 3); // 531666.67 / (1856666.67 + 117123.29) = 0.3166...
+      expect(result[0].netBlock).toBe(0); // netBlock is set to 0 since capex is removed
+      expect(result[0].roce).toBeCloseTo(5.34, 2); // 625000 / 117123.29 = 5.34 (EBIT / Working Capital only)
     });
   });
 

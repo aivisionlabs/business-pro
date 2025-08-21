@@ -76,8 +76,6 @@ export default function CaseMetricsCharts({
     conversionCost: year.conversionCost,
     sgaCost: year.sgaCost,
     otherCosts:
-      year.powerCost +
-      year.manpowerCost +
       year.valueAddCost +
       year.packagingCost +
       year.freightOutCost +
