@@ -1,10 +1,10 @@
+/**
+ * Essential utility functions for calculations
+ * Only contains pure, reusable functions
+ */
+
 export function toKg(grams: number): number {
   return grams / 1000;
-}
-
-export function clamp01(value: number): number {
-  if (Number.isNaN(value)) return 0;
-  return Math.max(0, Math.min(1, value));
 }
 
 export function compoundInflationSeries(rates: number[]): number[] {
@@ -21,10 +21,6 @@ export function compoundInflationSeries(rates: number[]): number[] {
 export function safeDiv(numerator: number, denominator: number): number {
   if (!denominator) return 0;
   return numerator / denominator;
-}
-
-export function round2(n: number): number {
-  return Math.round((n + Number.EPSILON) * 100) / 100;
 }
 
 export function irr(cashflows: number[], guess = 0.1): number | null {

@@ -28,13 +28,9 @@ export type NpdInput = {
 };
 
 export type OpsInput = {
-  powerUnitsPerHour: number; // kWh
-  automation: boolean;
-  manpowerCount: number; // persons
   oee: number; // 0..1
   operatingHoursPerDay?: number; // default 24
   workingDaysPerYear?: number; // default 365
-  shiftsPerDay?: number; // default 3
   machineAvailable?: boolean; // UI-only flag; not used in calc yet
   // New fields for depreciation calculation
   newMachineRequired?: boolean;
@@ -49,6 +45,7 @@ export type OpsInput = {
   lifeOfNewMachineYears?: number; // default 15
   lifeOfNewMouldYears?: number; // default 15
   lifeOfNewInfraYears?: number; // default 30
+  workingCapitalDays?: number; // days of revenue tied up (moved from capex)
 };
 
 export type CostingInput = {
@@ -70,15 +67,7 @@ export type CostingInput = {
   useMbPriceOverride?: boolean; // if false, derive MB cost from resin price
 };
 
-export type CapexInput = {
-  machineCost: number;
-  infraCost: number;
-  workingCapitalDays: number; // days of revenue tied up
-  usefulLifeMachineYears: number;
-  usefulLifeMouldYears: number;
-  usefulLifeInfraYears: number;
-  investmentRequired?: boolean; // UI-only flag; not used in calc yet
-};
+export type CapexInput = Record<string, never>; // Deprecated - all properties moved to OpsInput
 
 export type FinanceInput = {
   includeCorpSGA: boolean;
@@ -218,6 +207,7 @@ export type WeightedAvgPricePerKgYear = {
   ebitdaPerKg: number;
   depreciationPerKg: number;
   ebitPerKg: number;
+  interestPerKg: number;
   pbtPerKg: number;
   patPerKg: number;
 };
@@ -226,4 +216,49 @@ export type WeightedAvgPricePerKgYear = {
 export type Scenario = BusinessCase;
 
 
+
+// ==============================
+// Simulation Types (Risk Engine)
+// ==============================
+
+export type OutcomeMetric = "NPV" | "IRR" | "PNL_Y1" | "PNL_Y5" | "PNL_TOTAL";
+
+export type ObjectiveConfig = {
+  metrics: OutcomeMetric[];
+};
+
+export type PerturbationSpec = {
+  variableId: string; // dot-path into BusinessCase/Sku input space
+  deltas: number[]; // e.g., [-0.2, -0.1, 0.1, 0.2] if percent=true else absolute
+  percent?: boolean; // default true
+};
+
+export type SensitivityRunItem = {
+  variableId: string;
+  delta: number;
+  metrics: Record<OutcomeMetric, number | null>;
+};
+
+export type SensitivityResponse = {
+  baseline: Record<OutcomeMetric, number | null>;
+  results: SensitivityRunItem[]; // can be used for Tornado
+};
+
+// Scenario Modeling
+export type ScenarioDefinition = {
+  id: string;
+  name: string;
+  overrides: Record<string, number>; // dot-path to numeric field => absolute value
+};
+
+export type ScenarioRunResult = {
+  scenarioId: string;
+  name: string;
+  metrics: Record<OutcomeMetric, number | null>;
+};
+
+export type ScenarioResponse = {
+  baseline: Record<OutcomeMetric, number | null>;
+  results: ScenarioRunResult[];
+};
 

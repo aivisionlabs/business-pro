@@ -48,12 +48,8 @@ export async function POST(req: NextRequest) {
       },
       ops: {
         oee: 0.8,
-        powerUnitsPerHour: 0,
-        automation: false,
-        manpowerCount: 0,
         operatingHoursPerDay: 24,
         workingDaysPerYear: 365,
-        shiftsPerDay: 3,
         newMachineRequired: false,
         newMouldRequired: false,
         newInfraRequired: false,
@@ -79,15 +75,6 @@ export async function POST(req: NextRequest) {
         mbRatioPct: 0,
         conversionInflationPct: [0, 0, 0, 0, 0],
         rmInflationPct: [0, 0, 0, 0, 0],
-      },
-      capex: {
-        machineCost: 0,
-
-        infraCost: 0,
-        workingCapitalDays: 0,
-        usefulLifeMachineYears: 15,
-        usefulLifeMouldYears: 15,
-        usefulLifeInfraYears: 30,
       },
       plantMaster: {
         plant: "",

@@ -1,21 +1,7 @@
 import React from "react";
 import { formatPerKg } from "@/lib/utils";
 import { CalcOutput } from "@/lib/types";
-import {
-  calculateRevenueNetPerKg,
-  calculateMaterialCostPerKg,
-  calculateMaterialMarginPerKg,
-  calculateConversionCostPerKg,
-  calculateGrossMarginPerKg,
-  calculateSgaCostPerKg,
-  calculateEbitdaPerKg,
-  calculateDepreciationPerKg,
-  calculateEbitPerKg,
-  calculateInterestPerKg,
-  calculateTaxPerKg,
-  calculatePbtPerKg,
-  calculatePatPerKg,
-} from "@/lib/calc/pnl-calculations";
+import { CalculationEngine } from "@/lib/calc/engines";
 
 interface PnlPerKgProps {
   calc: CalcOutput;
@@ -24,93 +10,160 @@ interface PnlPerKgProps {
     ebit: number[];
     interest: number[];
     tax: number[];
-    pbt: number[];
     pat: number[];
   };
 }
 
 export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-sm text-slate-900">
-        <thead>
-          <tr className="border-b border-slate-200 text-slate-700">
-            <th className="text-left p-2">Line Item</th>
-            {Array.from({ length: 5 }, (_, i) => i + 1).map((y) => (
-              <th key={y} className="text-right p-2">
-                Y{y}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {[
-            {
-              label: "Revenue (net)",
-              getter: (i: number) => calculateRevenueNetPerKg(calc, i),
-            },
-            {
-              label: "Material cost",
-              getter: (i: number) => calculateMaterialCostPerKg(calc, i),
-            },
-            {
-              label: "Material margin",
-              getter: (i: number) => calculateMaterialMarginPerKg(calc, i),
-            },
-            {
-              label: "Conversion cost",
-              getter: (i: number) => calculateConversionCostPerKg(calc, i),
-            },
-            {
-              label: "Gross margin",
-              getter: (i: number) => calculateGrossMarginPerKg(calc, i),
-            },
-            {
-              label: "SG&A cost",
-              getter: (i: number) => calculateSgaCostPerKg(calc, i),
-            },
-            {
-              label: "EBITDA",
-              getter: (i: number) => calculateEbitdaPerKg(calc, i),
-            },
-            {
-              label: "Depreciation",
-              getter: (i: number) =>
-                calculateDepreciationPerKg(calc, i, pnlAggregated),
-            },
-            {
-              label: "EBIT",
-              getter: (i: number) => calculateEbitPerKg(calc, i, pnlAggregated),
-            },
-            {
-              label: "Interest",
-              getter: (i: number) =>
-                calculateInterestPerKg(calc, i, pnlAggregated),
-            },
-            {
-              label: "Tax",
-              getter: (i: number) => calculateTaxPerKg(calc, i, pnlAggregated),
-            },
-            {
-              label: "PBT",
-              getter: (i: number) => calculatePbtPerKg(calc, i, pnlAggregated),
-            },
-            {
-              label: "PAT",
-              getter: (i: number) => calculatePatPerKg(calc, i, pnlAggregated),
-            },
-          ].map(({ label, getter }) => (
-            <tr key={label} className="border-b border-slate-100">
-              <td className="p-2 text-slate-700">{label}</td>
-              {Array.from({ length: 5 }, (_, idx) => (
-                <td key={idx} className="p-2 text-right font-mono">
-                  {formatPerKg(getter(idx))}
-                </td>
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold text-slate-800">
+        P&L per kg (weighted average)
+      </h3>
+      <div className="overflow-x-auto text-slate-900">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-200">
+              <th className="text-left p-2">Metric</th>
+              {Array.from({ length: 5 }, (_, index) => (
+                <th key={index} className="text-right p-2">
+                  Y{index + 1}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {[
+              {
+                label: "Revenue (net)",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).revenueNetPerKg,
+              },
+              {
+                label: "Material cost",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).materialCostPerKg,
+              },
+              {
+                label: "Material margin",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).materialMarginPerKg,
+              },
+              {
+                label: "Conversion cost",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).conversionCostPerKg,
+              },
+              {
+                label: "Gross margin",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).grossMarginPerKg,
+              },
+              {
+                label: "SG&A cost",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).sgaCostPerKg,
+              },
+              {
+                label: "EBITDA",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).ebitdaPerKg,
+              },
+              {
+                label: "Depreciation",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).depreciationPerKg,
+              },
+              {
+                label: "EBIT",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).ebitPerKg,
+              },
+              {
+                label: "Interest",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).interestPerKg,
+              },
+              {
+                label: "Tax",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).taxPerKg,
+              },
+              {
+                label: "PBT",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).pbtPerKg,
+              },
+              {
+                label: "PAT",
+                getter: (i: number) =>
+                  CalculationEngine.calculatePerKgForYear(
+                    calc,
+                    i,
+                    pnlAggregated
+                  ).patPerKg,
+              },
+            ].map(({ label, getter }) => (
+              <tr key={label} className="border-b border-slate-100">
+                <td className="p-2 text-slate-700">{label}</td>
+                {Array.from({ length: 5 }, (_, idx) => (
+                  <td key={idx} className="p-2 text-right font-mono">
+                    {formatPerKg(getter(idx))}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import { PriceYear, CalcOutput, BusinessCase, SkuCalcOutput, PnlYear } from "@/lib/types";
-import { buildPriceByYear, buildWeightedAvgPricePerKg, buildWeightedAvgPricePerKgTable } from "./price";
-import { buildPnlForSku, buildCashflowsAndReturnsForCase } from "./pnl";
+import { CalculationEngine } from "./engines";
 
 export function calculateScenario(bcase: BusinessCase): CalcOutput {
   // Validate input structure
@@ -23,14 +22,108 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
 
   // Compute per-SKU breakdowns
   const bySku: SkuCalcOutput[] = bcase.skus.map((sku) => {
-    const prices: PriceYear[] = buildPriceByYear(
+    const prices: PriceYear[] = CalculationEngine.buildPriceByYear(
       sku.sales,
       sku.costing,
       sku.npd,
       sku.ops,
       sku.altConversion
     );
-    const { pnl, volumes } = buildPnlForSku(sku, bcase.finance, prices);
+
+    // Build P&L for this SKU using CalculationEngine
+    const volumes = CalculationEngine.calculateVolumes(
+      sku.sales.productWeightGrams,
+      sku.sales.baseAnnualVolumePieces,
+    );
+
+    const pnl: PnlYear[] = [];
+    const openingDebt = CalculationEngine.buildOpeningDebt(bcase.finance, sku);
+    const interestRate = bcase.finance.costOfDebtPct || 0;
+
+    for (const v of volumes) {
+      const { year, volumePieces, weightKg } = v;
+      const p = prices[year - 1];
+
+      const revenueGross = CalculationEngine.buildRevenueGross(p, volumePieces);
+      const revenueNet = CalculationEngine.buildRevenueNet(revenueGross);
+
+      const powerCost = CalculationEngine.buildPowerCost(
+        sku.ops,
+        sku.ops.operatingHoursPerDay ?? 24,
+        sku.ops.workingDaysPerYear ?? 365,
+        sku.plantMaster.powerRatePerUnit,
+        weightKg
+      );
+
+      const manpowerCost = CalculationEngine.buildManpowerCost(
+        sku.ops,
+        sku.ops.shiftsPerDay ?? 3,
+        sku.ops.workingDaysPerYear ?? 365,
+        sku.plantMaster.manpowerRatePerShift,
+        weightKg
+      );
+
+      const valueAddCost = CalculationEngine.buildValueAddCost(sku, volumePieces);
+      const packagingCost = CalculationEngine.buildPackagingCost(sku, weightKg);
+      const freightOutCost = CalculationEngine.buildFreightOutCost(sku, weightKg);
+      const conversionRecoveryCost = CalculationEngine.buildConversionRecoveryCost(sku, volumePieces);
+
+      const materialCost = CalculationEngine.buildMaterialCost(p, weightKg, packagingCost, freightOutCost);
+      const materialMargin = CalculationEngine.buildMaterialMargin(revenueNet, materialCost);
+
+      const rAndMCost = CalculationEngine.buildRAndMCost(sku.plantMaster, weightKg);
+      const otherMfgCost = CalculationEngine.buildOtherMfgCost(sku.plantMaster, weightKg);
+      const plantSgaCost = CalculationEngine.buildPlantSgaCost(sku.plantMaster, weightKg);
+      const corpSgaCost = CalculationEngine.buildCorpSgaCost(bcase.finance, sku.plantMaster, weightKg);
+      const sgaCost = CalculationEngine.buildSgaCost(sku.plantMaster, weightKg);
+
+      const conversionCost = CalculationEngine.buildConversionCost(sku.plantMaster, weightKg);
+
+      const grossMargin = CalculationEngine.buildGrossMargin(materialMargin, conversionCost);
+      const ebitda = CalculationEngine.buildEbitda(revenueNet, materialCost, conversionCost, sgaCost);
+
+      const depMachine = CalculationEngine.buildMachineDepreciation(sku);
+      const depMould = CalculationEngine.buildMouldDepreciation(sku);
+      const depInfra = CalculationEngine.buildInfraDepreciation(sku);
+      const depreciation = depMachine + depMould + depInfra;
+
+      const ebit = CalculationEngine.buildEbit(ebitda, depreciation);
+
+      const interestCapex = CalculationEngine.buildInterestCapex(openingDebt, interestRate);
+      const pbt = CalculationEngine.buildPbt(ebit, interestCapex);
+      const taxRate = Math.max(0, bcase.finance.corporateTaxRatePct || 0);
+      const tax = CalculationEngine.buildTax(pbt, taxRate);
+      const pat = CalculationEngine.buildPat(pbt, tax);
+
+      pnl.push({
+        year,
+        revenueGross,
+        revenueNet,
+        materialCost,
+        materialMargin,
+        powerCost,
+        manpowerCost,
+        valueAddCost,
+        packagingCost,
+        freightOutCost,
+        conversionRecoveryCost,
+        rAndMCost,
+        otherMfgCost,
+        plantSgaCost,
+        corpSgaCost,
+        sgaCost,
+        conversionCost,
+        grossMargin,
+        ebitda,
+        depreciation,
+        ebit,
+        interestCapex,
+        pbt,
+        tax,
+        pat,
+      });
+    }
+
     return { skuId: sku.id, name: sku.name, prices, pnl, volumes };
   });
 
@@ -101,7 +194,7 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
       acc.pat += y.pat;
     }
 
-    // Recalculate gross margin and EBITDA based on aggregated values (following pnl.ts formulas)
+    // Recalculate gross margin and EBITDA based on aggregated values
     acc.grossMargin = acc.materialMargin - acc.conversionCost;
     acc.ebitda = acc.revenueNet - acc.materialCost - acc.conversionCost - acc.sgaCost;
 
@@ -109,27 +202,13 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
   });
 
   // Calculate weighted average prices per kg across all SKUs
-  const prices: PriceYear[] = buildWeightedAvgPricePerKg(bySku, volumes);
+  const prices: PriceYear[] = CalculationEngine.buildWeightedAvgPricePerKg(bySku, volumes);
 
   // Aggregate capex and depreciation schedule
   const capex0 = bcase.skus.reduce((sum, s) => sum + (s.capex.machineCost || 0) + (s.capex.infraCost || 0), 0);
   const annualDepreciationByYear = Array.from({ length: years }, () => {
     return bcase.skus.reduce((sum, s) => {
-      // Depreciation calculation using only the 6 required fields
-      const machineInvestment = s.capex.machineCost || 0;
-      const mouldInvestment = 0;
-      const infraInvestment = s.capex.infraCost || 0;
-
-      const machineLife = s.capex.usefulLifeMachineYears || 15; // Default 15 years
-      const mouldLife = s.capex.usefulLifeMouldYears || 15; // Default 15 years
-      const infraLife = s.capex.usefulLifeInfraYears || 30; // Default 30 years
-
-      // Depreciation = Investment / Life in years
-      const depMachine = machineInvestment / Math.max(1, machineLife);
-      const depMould = mouldInvestment / Math.max(1, mouldLife);
-      const depInfra = infraInvestment / Math.max(1, infraLife);
-
-      return sum + depMachine + depMould + depInfra;
+      return sum + CalculationEngine.buildTotalDepreciation(s);
     }, 0);
   });
   const workingCapitalDays = Math.max(
@@ -137,14 +216,59 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
     ...bcase.skus.map((s) => s.capex.workingCapitalDays || 0)
   );
 
-  const { cashflow, returns } = buildCashflowsAndReturnsForCase(bcase.finance, pnl, {
-    capex0,
-    workingCapitalDays,
-    annualDepreciationByYear,
-  });
+  // Build cashflows and returns using CalculationEngine
+  const cashflow = [];
+  const taxRate = bcase.finance.corporateTaxRatePct || 0;
+
+  // Year 0
+  cashflow.push({ year: 0, nwc: 0, changeInNwc: 0, fcf: -capex0, pv: 0, cumulativeFcf: -capex0 });
+
+  let prevNwc = 0;
+  for (const y of pnl) {
+    const nwc = CalculationEngine.buildWorkingCapital(workingCapitalDays, y.revenueNet);
+    const changeInNwc = CalculationEngine.buildChangeInWorkingCapital(nwc, prevNwc);
+    prevNwc = nwc;
+    const fcf = CalculationEngine.buildFreeCashFlow(y.ebit, taxRate, y.depreciation, changeInNwc);
+    cashflow.push({
+      year: y.year,
+      nwc,
+      changeInNwc,
+      fcf,
+      pv: 0,
+      cumulativeFcf: 0,
+    });
+  }
+
+  const wacc = CalculationEngine.buildWacc(bcase.finance, taxRate);
+
+  // PV, NPV, cumulative
+  const npv = CalculationEngine.buildNpv(cashflow, wacc);
+  cashflow[0].pv = cashflow[0].fcf;
+  cashflow[0].cumulativeFcf = cashflow[0].fcf;
+  for (let i = 1; i < cashflow.length; i += 1) {
+    const t = cashflow[i].year;
+    const pv = CalculationEngine.buildPresentValue(cashflow[i].fcf, wacc, t);
+    cashflow[i].pv = pv;
+    cashflow[i].cumulativeFcf = 0;
+  }
+
+  // Update cumulative cash flow
+  const updatedCashflow = CalculationEngine.buildCumulativeCashFlow(cashflow);
+  Object.assign(cashflow, updatedCashflow);
+
+  // IRR and Payback
+  const irrSeries = cashflow.map((c) => c.fcf);
+  const irrValue = CalculationEngine.irr(irrSeries);
+
+  const paybackYears = CalculationEngine.buildPaybackYears(cashflow);
+
+  // RoCE and net block
+  const roceByYear = CalculationEngine.buildRoceByYear(pnl, capex0, annualDepreciationByYear, cashflow);
+
+  const returns = { wacc, npv, irr: irrValue, paybackYears, roceByYear };
 
   // Calculate weighted average price per kg table
-  const weightedAvgPricePerKg = buildWeightedAvgPricePerKgTable(bySku, pnl, volumes);
+  const weightedAvgPricePerKg = CalculationEngine.buildWeightedAvgPricePerKgTable(bySku, pnl, volumes);
 
   return { volumes, prices, pnl, weightedAvgPricePerKg, cashflow, returns, bySku };
 }

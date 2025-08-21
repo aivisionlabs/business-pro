@@ -3,28 +3,16 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { calculateScenario } from "@/lib/calc";
 import { BusinessCase as Scenario, PlantMaster, Sku } from "@/lib/types";
 import { nanoid } from "nanoid";
-import CaseMetricsCharts from "@/components/CaseMetricsCharts";
+// import CaseMetricsCharts from "@/components/CaseMetricsCharts";
 import { Section } from "./common";
 import FinanceEditor from "./FinanceEditor";
 import SkuEditor from "./SkuEditor";
 import PnlAggregated from "./PnlAggregated";
 import PnlPerKg from "./PnlPerKg";
-import {
-  calculateRevenueNet,
-  calculateMaterialCost,
-  calculateMaterialMargin,
-  calculateConversionCost,
-  calculateGrossMargin,
-  calculateSgaCost,
-  calculateEbitda,
-  calculateDepreciation,
-  calculateEbit,
-  calculateInterest,
-  calculatePbt,
-  calculateTax,
-  calculatePat,
-} from "@/lib/calc/pnl-calculations";
+import { CalculationEngine } from "@/lib/calc/engines";
 import { formatCrores, formatPct } from "@/lib/utils";
+import RiskSensitivity from "./RiskSensitivity";
+import RiskScenarios from "./RiskScenarios";
 
 // Custom hook for autosaving functionality
 function useAutoSave(
@@ -116,26 +104,10 @@ export default function MultiSkuEditor({
   );
   const sku = scenario.skus[activeSkuIndex];
 
-  // P&L Calculation Functions - Atomic and Testable
+  // P&L Calculation Functions using Engine
   const calculatePnlAggregated = useMemo(() => {
     const calc = calculateScenario(scenario);
-    const years = [1, 2, 3, 4, 5];
-
-    return {
-      revenueNet: years.map((year) => calculateRevenueNet(calc, year)),
-      materialCost: years.map((year) => calculateMaterialCost(calc, year)),
-      materialMargin: years.map((year) => calculateMaterialMargin(calc, year)),
-      conversionCost: years.map((year) => calculateConversionCost(calc, year)),
-      grossMargin: years.map((year) => calculateGrossMargin(calc, year)),
-      sgaCost: years.map((year) => calculateSgaCost(calc, year)),
-      ebitda: years.map((year) => calculateEbitda(calc, year)),
-      depreciation: years.map((year) => calculateDepreciation(scenario)),
-      ebit: years.map((year) => calculateEbit(calc, year, scenario)),
-      interest: years.map((year) => calculateInterest(scenario, calc, year)),
-      pbt: years.map((year) => calculatePbt(calc, year, scenario)),
-      tax: years.map((year) => calculateTax(calc, year, scenario)),
-      pat: years.map((year) => calculatePat(calc, year, scenario)),
-    };
+    return CalculationEngine.calculateAggregatedPnl(calc, scenario);
   }, [scenario]);
 
   // Update P&L aggregated state when calculations change
@@ -395,7 +367,7 @@ export default function MultiSkuEditor({
             <div className="flex flex-wrap gap-2 items-center">
               {scenario.skus.map((s) => (
                 <button
-                  key={s.id}
+                  key={`${s.id}-${s.name}`}
                   onClick={() => setActiveSkuId(s.id)}
                   className={`px-3 py-1.5 rounded-md border text-sm ${
                     s.id === activeSkuId
@@ -465,21 +437,29 @@ export default function MultiSkuEditor({
             </div>
           </Section>
 
-          {/* Weighted-average price per kg across SKUs - matching P&L structure */}
+          {/* Weighted-average price per kg across SKUs */}
           <Section title="P&L per kg (Y1..Y5)">
             <PnlPerKg calc={calc} pnlAggregated={pnlAggregated} />
           </Section>
 
+          {/* P&L (Aggregated) */}
           <Section title="P&L (Aggregated)">
             <PnlAggregated pnlAggregated={pnlAggregated} />
+          </Section>
+
+          {/* Risk - Sensitivity */}
+          <Section title="Risk">
+            <RiskSensitivity scenario={scenario} />
+            <div className="h-4" />
+            <RiskScenarios scenario={scenario} />
           </Section>
         </div>
       </div>
 
-      {/* Case Metrics Charts - placed above Debug Panel */}
-      <Section title="📈 Case Performance Charts" className="mt-6">
+      {/* Case Metrics Charts - COMMENTED OUT */}
+      {/* <Section title="📈 Case Performance Charts" className="mt-6">
         <CaseMetricsCharts calcOutput={calc} />
-      </Section>
+      </Section> */}
     </div>
   );
 }

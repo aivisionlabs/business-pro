@@ -1,7 +1,7 @@
 import React from "react";
 import { Sku, PlantMaster } from "@/lib/types";
 import { LabeledInput, LabeledSelect } from "./common";
-import { calculateTotalDepreciation } from "@/lib/calc/pnl-calculations";
+import { CalculationEngine } from "@/lib/calc/engines";
 
 interface SkuEditorProps {
   sku: Sku;
@@ -342,9 +342,12 @@ export default function SkuEditor({
           </div>
           <div className="text-2xl font-bold text-blue-900">
             ₹
-            {calculateTotalDepreciation(sku).toLocaleString("en-IN", {
-              maximumFractionDigits: 2,
-            })}
+            {CalculationEngine.buildTotalDepreciation(sku).toLocaleString(
+              "en-IN",
+              {
+                maximumFractionDigits: 2,
+              }
+            )}
           </div>
         </div>
       </div>
