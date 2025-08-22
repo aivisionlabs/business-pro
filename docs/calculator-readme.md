@@ -13,7 +13,7 @@ Authoritative spec is aligned to the workbook discussion captured here: [Workboo
 
 ### Data model (summary)
 - `BusinessCase` contains:
-  - `finance` (case-level) and an array `skus[]` where each `Sku` has `sales`, `npd`, `ops`, `costing`, `capex`, optional `altConversion`, and a selected `plantMaster` row.
+  - `finance` (case-level) and an array `skus[]` where each `Sku` has `sales`, `npd`, `ops`, `costing`, and a selected `plantMaster` row.
 - Full TypeScript types are in `src/lib/types.ts`.
 
 ### Notation

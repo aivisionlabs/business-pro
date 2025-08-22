@@ -66,6 +66,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       skus: input.skus,
     };
 
+    console.log("updates", updates);
+
     await businessCaseService.update(id, updates);
 
     return new Response(JSON.stringify({ success: true }),

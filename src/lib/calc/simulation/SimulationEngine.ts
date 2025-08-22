@@ -46,9 +46,10 @@ export class SimulationEngine {
   static runSensitivity(
     bcase: BusinessCase,
     specs: PerturbationSpec[],
-    objective: ObjectiveConfig
+    objective: ObjectiveConfig,
+    baselineOverride?: Record<OutcomeMetric, number | null>
   ): SensitivityResponse {
-    const baseline = this.runBaseline(bcase, objective);
+    const baseline = baselineOverride ?? this.runBaseline(bcase, objective);
     const results: SensitivityRunItem[] = [];
 
     for (const spec of specs) {

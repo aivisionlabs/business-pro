@@ -9,12 +9,23 @@ export function toKg(grams: number): number {
 
 export function compoundInflationSeries(rates: number[]): number[] {
   // expects length 5 series, where index 0 is Y1 rate (usually 0)
+  // extends to 10 years by repeating the last rate for years 6-10
   const out: number[] = [];
   let acc = 1;
+
+  // Process the provided rates
   for (let i = 0; i < rates.length; i += 1) {
     acc *= 1 + (rates[i] || 0);
     out.push(acc);
   }
+
+  // Extend to 10 years by repeating the last rate
+  const lastRate = rates[rates.length - 1] || 0;
+  for (let i = rates.length; i < 10; i += 1) {
+    acc *= 1 + lastRate;
+    out.push(acc);
+  }
+
   return out;
 }
 

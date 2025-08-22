@@ -5,17 +5,23 @@ import { SimulationEngine } from "@/lib/calc/simulation/SimulationEngine";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { businessCase, specs, objective } = body as {
+    const { businessCase, specs, objective, baseline } = body as {
       businessCase: BusinessCase;
       specs: PerturbationSpec[];
       objective: ObjectiveConfig;
+      baseline?: Record<string, number | null>;
     };
 
     if (!businessCase || !Array.isArray(specs) || !objective) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
-    const result = SimulationEngine.runSensitivity(businessCase, specs, objective);
+    const result = SimulationEngine.runSensitivity(
+      businessCase,
+      specs,
+      objective,
+      baseline as any
+    );
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Server error";

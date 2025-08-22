@@ -9,6 +9,7 @@ import FinanceEditor from "./FinanceEditor";
 import SkuEditor from "./SkuEditor";
 import PnlAggregated from "./PnlAggregated";
 import PnlPerKg from "./PnlPerKg";
+import FreeCashFlow from "./FreeCashFlow";
 import { CalculationEngine } from "@/lib/calc/engines";
 import { formatCrores, formatPct } from "@/lib/utils";
 import RiskSensitivity from "./RiskSensitivity";
@@ -122,30 +123,21 @@ export default function MultiSkuEditor({
 
     if (updatedScenario.finance) {
       const originalFinance = updatedScenario.finance;
-      console.log(`Initial finance values:`, {
-        original: originalFinance,
-        debtPct: originalFinance.debtPct,
-        costOfDebtPct: originalFinance.costOfDebtPct,
-        corporateTaxRatePct: originalFinance.corporateTaxRatePct,
-      });
       updatedScenario.finance = {
         includeCorpSGA: originalFinance.includeCorpSGA ?? true,
         debtPct: originalFinance.debtPct ?? 0,
         costOfDebtPct: originalFinance.costOfDebtPct ?? 0,
         costOfEquityPct: originalFinance.costOfEquityPct ?? 0,
         corporateTaxRatePct: originalFinance.corporateTaxRatePct ?? 0.25, // Default to 25%
+        waccPct: originalFinance.waccPct ?? 0.14, // Default to 14%
       };
-      console.log(`Updated finance values:`, {
-        updated: updatedScenario.finance,
-        debtPct: updatedScenario.finance.debtPct,
-        costOfDebtPct: updatedScenario.finance.costOfDebtPct,
-        corporateTaxRatePct: updatedScenario.finance.corporateTaxRatePct,
-      });
       // Check if any defaults were applied
       if (
         originalFinance.corporateTaxRatePct === undefined ||
         originalFinance.corporateTaxRatePct === null ||
-        originalFinance.corporateTaxRatePct === 0
+        originalFinance.corporateTaxRatePct === 0 ||
+        originalFinance.waccPct === undefined ||
+        originalFinance.waccPct === null
       ) {
         needsSave = true;
       }
@@ -424,13 +416,17 @@ export default function MultiSkuEditor({
             <PnlAggregated pnlAggregated={pnlAggregated} />
           </Section>
 
-          {/* Risk - Sensitivity */}
-          <Section title="Risk">
-            <RiskSensitivity scenario={scenario} />
-            <div className="h-4" />
-            <RiskScenarios scenario={scenario} />
+          {/* Free Cash Flow */}
+          <Section title="Free Cash Flow Analysis">
+            <FreeCashFlow cashflow={calc.cashflow} pnl={calc.pnl} />
           </Section>
         </div>
+      </div>
+
+      {/* Risk Analysis - Full Page Width */}
+      <div className="mt-8 space-y-6">
+        <RiskSensitivity scenario={scenario} />
+        <RiskScenarios scenario={scenario} />
       </div>
 
       {/* Case Metrics Charts - COMMENTED OUT */}

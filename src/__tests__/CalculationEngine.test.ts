@@ -317,10 +317,10 @@ describe('CalculationEngine', () => {
 
     it('should calculate free cash flow correctly', () => {
       const result = CalculationEngine.buildFreeCashFlow(531666.67, 0.25, 143333.33, 117123.29);
-      // FCF = EBIT * (1 - taxRate) + depreciation - changeInNwc
-      // = 531666.67 * 0.75 + 143333.33 - 117123.29
-      // = 398750 + 143333.33 - 117123.29 = 424960.04
-      expect(result).toBeCloseTo(424960.04, 2);
+      // FCF = EBITDA - Interest - Tax - changeInNwc
+      // = 531666.67 - 0.25 - 143333.33 - 117123.29
+      // = 531666.67 - 0.25 - 143333.33 - 117123.29 = 271209.79
+      expect(result).toBeCloseTo(271209.80, 2);
     });
 
     it('should calculate WACC correctly', () => {

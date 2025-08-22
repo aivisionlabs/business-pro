@@ -2,6 +2,7 @@ import React from "react";
 import { formatPerKg } from "@/lib/utils";
 import { CalcOutput } from "@/lib/types";
 import { CalculationEngine } from "@/lib/calc/engines";
+import { CALCULATION_CONFIG } from "@/lib/calc/config";
 
 interface PnlPerKgProps {
   calc: CalcOutput;
@@ -25,11 +26,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
           <thead>
             <tr className="border-b border-slate-200">
               <th className="text-left p-2">Metric</th>
-              {Array.from({ length: 5 }, (_, index) => (
-                <th key={index} className="text-right p-2">
-                  Y{index + 1}
-                </th>
-              ))}
+                          {Array.from({ length: CALCULATION_CONFIG.UI_DISPLAY_YEARS }, (_, index) => (
+              <th key={index} className="text-right p-2">
+                Y{index + 1}
+              </th>
+            ))}
             </tr>
           </thead>
           <tbody>
@@ -154,7 +155,7 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
             ].map(({ label, getter }) => (
               <tr key={label} className="border-b border-slate-100">
                 <td className="p-2 text-slate-700">{label}</td>
-                {Array.from({ length: 5 }, (_, idx) => (
+                {Array.from({ length: CALCULATION_CONFIG.UI_DISPLAY_YEARS }, (_, idx) => (
                   <td key={idx} className="p-2 text-right font-mono">
                     {formatPerKg(getter(idx))}
                   </td>

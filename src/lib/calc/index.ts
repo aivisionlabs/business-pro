@@ -1,5 +1,6 @@
 import { PriceYear, CalcOutput, BusinessCase, SkuCalcOutput, PnlYear } from "@/lib/types";
 import { CalculationEngine } from "./engines";
+import { CALCULATION_CONFIG } from "./config";
 
 export function calculateScenario(bcase: BusinessCase): CalcOutput {
   // Validate input structure
@@ -110,7 +111,7 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
   });
 
   // Aggregate volumes (sum pieces and weight per year)
-  const years = 5;
+  const years = CALCULATION_CONFIG.YEARS;
   const volumes = Array.from({ length: years }, (_, i) => {
     const year = i + 1;
     const vpcs = bySku.reduce((sum, s) => sum + (s.volumes[i]?.volumePieces || 0), 0);
@@ -165,16 +166,36 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
       acc.conversionCost += y.conversionCost;
       acc.ebitda += y.ebitda;
       acc.depreciation += y.depreciation;
-      acc.ebit += y.ebit;
-      acc.interestCapex += y.interestCapex;
-      acc.pbt += y.pbt;
-      acc.tax += y.tax;
-      acc.pat += y.pat;
+      // Don't sum these - we'll recalculate them from aggregated values
+      // acc.ebit += y.ebit;
+      // acc.interestCapex += y.interestCapex;
+      // acc.pbt += y.pbt;
+      // acc.tax += y.tax;
+      // acc.pat += y.pat;
     }
 
     // Recalculate gross margin and EBITDA based on aggregated values
     acc.grossMargin = acc.materialMargin - acc.conversionCost;
     acc.ebitda = acc.revenueNet - acc.materialCost - acc.conversionCost - acc.sgaCost;
+
+    // Recalculate EBIT, interest, PBT, and tax using aggregated values
+    acc.ebit = CalculationEngine.buildEbit(acc.ebitda, acc.depreciation);
+
+    // Calculate interest using the same logic as P&L (Aggregated)
+    const totalCapex = bcase.skus.reduce((total, sku) => {
+      const skuCapex = (sku.ops?.costOfNewMachine || 0) + (sku.ops?.costOfNewInfra || 0);
+      return total + skuCapex;
+    }, 0);
+
+    const workingCapitalDays = Math.max(60, ...bcase.skus.map(s => s.ops?.workingCapitalDays || 60));
+    const workingCapitalInvestment = (acc.revenueNet || 0) * (workingCapitalDays / 365);
+    const totalInvestment = totalCapex + workingCapitalInvestment;
+    acc.interestCapex = totalInvestment * (bcase.finance.costOfDebtPct || 0);
+
+    // Recalculate PBT and tax
+    acc.pbt = CalculationEngine.buildPbt(acc.ebit, acc.interestCapex);
+    acc.tax = CalculationEngine.buildTax(acc.pbt, bcase.finance.corporateTaxRatePct || 0);
+    acc.pat = CalculationEngine.buildPat(acc.pbt, acc.tax);
 
     return acc;
   });
@@ -197,15 +218,22 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
   const cashflow = [];
   const taxRate = bcase.finance.corporateTaxRatePct || 0;
 
-  // Year 0
-  cashflow.push({ year: 0, nwc: 0, changeInNwc: 0, fcf: 0, pv: 0, cumulativeFcf: 0 });
+  // Year 0 - Total Capex (negative cash flow)
+  const totalCapex = bcase.skus.reduce((total, sku) => {
+    const skuCapex = (sku.ops?.costOfNewMachine || 0) + (sku.ops?.costOfNewInfra || 0);
+    return total + skuCapex;
+  }, 0);
+
+  cashflow.push({ year: 0, nwc: 0, changeInNwc: 0, fcf: -totalCapex, pv: 0, cumulativeFcf: 0 });
 
   let prevNwc = 0;
   for (const y of pnl) {
     const nwc = CalculationEngine.buildWorkingCapital(workingCapitalDays, y.revenueNet);
     const changeInNwc = CalculationEngine.buildChangeInWorkingCapital(nwc, prevNwc);
     prevNwc = nwc;
-    const fcf = CalculationEngine.buildFreeCashFlow(y.ebit, taxRate, y.depreciation, changeInNwc);
+
+    const fcf = CalculationEngine.buildFreeCashFlow(y.ebitda, y.interestCapex, y.tax, changeInNwc);
+
     cashflow.push({
       year: y.year,
       nwc,
@@ -220,6 +248,7 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
 
   // PV, NPV, cumulative
   const npv = CalculationEngine.buildNpv(cashflow, wacc);
+  // Year 0 present value is the same as the cash flow (no discounting)
   cashflow[0].pv = cashflow[0].fcf;
   cashflow[0].cumulativeFcf = cashflow[0].fcf;
   for (let i = 1; i < cashflow.length; i += 1) {

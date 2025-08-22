@@ -10,6 +10,7 @@ import {
   PnlYear
 } from "@/lib/types";
 import { compoundInflationSeries, toKg, safeDiv } from "../utils";
+import { CALCULATION_CONFIG } from "../config";
 
 /**
  * Unified CalculationEngine - Handles ALL calculations in one place
@@ -41,7 +42,7 @@ export class CalculationEngine {
     baseAnnualVolumePieces: number,
   ): YearVolumes[] {
     const productWeightKg = toKg(productWeightGrams);
-    const years = 5;
+    const years = CALCULATION_CONFIG.YEARS;
     const results: YearVolumes[] = [];
     for (let year = 1; year <= years; year += 1) {
       const volumePieces = baseAnnualVolumePieces;
@@ -106,7 +107,7 @@ export class CalculationEngine {
     const rmInflFactors = compoundInflationSeries(costing.rmInflationPct);
     const convInflFactors = compoundInflationSeries(costing.conversionInflationPct);
 
-    const years = 5;
+    const years = CALCULATION_CONFIG.YEARS;
     const out: PriceYear[] = [];
 
     const materialPerKgY1 = rmY1 + mbY1;
@@ -409,42 +410,82 @@ export class CalculationEngine {
 
   /**
    * Calculate free cash flow
+   * FCF = EBITDA - Interest - Tax - Working Capital investment
    */
   static buildFreeCashFlow(
-    ebit: number,
-    taxRate: number,
-    depreciation: number,
+    ebitda: number,
+    interest: number,
+    tax: number,
     changeInNwc: number
   ): number {
-    return ebit * (1 - taxRate) + depreciation - changeInNwc;
+
+    const fcf = ebitda - interest - tax - changeInNwc;
+
+
+    return fcf;
   }
 
   /**
-   * Calculate WACC
-   */
+ * Calculate WACC
+ */
   static buildWacc(finance: any, taxRate: number): number {
+    console.log('=== CalculationEngine.buildWacc ===');
+    console.log('Finance inputs:', JSON.stringify(finance, null, 2));
+    console.log('Tax rate:', taxRate);
+
+    // If WACC is explicitly provided, use it
+    if (finance?.waccPct !== undefined && finance.waccPct !== null) {
+      console.log('Using provided WACC:', finance.waccPct);
+      console.log('========================================');
+      return finance.waccPct;
+    }
+
+    // Default WACC to 14% if finance inputs are missing
+    if (!finance || (!finance.debtPct && !finance.costOfDebtPct && !finance.costOfEquityPct)) {
+      console.log('Using default WACC: 14%');
+      console.log('========================================');
+      return 0.14; // 14% default WACC
+    }
+
     const equityPct = 1 - (finance.debtPct || 0);
-    return (finance.debtPct || 0) * (finance.costOfDebtPct || 0) * (1 - taxRate) +
+    const wacc = (finance.debtPct || 0) * (finance.costOfDebtPct || 0) * (1 - taxRate) +
       equityPct * (finance.costOfEquityPct || 0);
+
+    console.log('Calculated WACC:', wacc);
+    console.log('========================================');
+    return wacc;
   }
 
   /**
    * Calculate present value
    */
   static buildPresentValue(fcf: number, wacc: number, year: number): number {
-    return fcf / Math.pow(1 + wacc, year);
+    const pv = fcf / Math.pow(1 + wacc, year);
+    console.log(`  buildPresentValue: ${fcf} / (1 + ${wacc})^${year} = ${fcf} / ${Math.pow(1 + wacc, year).toFixed(4)} = ${pv.toFixed(2)}`);
+    return pv;
   }
 
   /**
    * Calculate NPV
    */
   static buildNpv(cashflows: any[], wacc: number): number {
+    console.log('=== CalculationEngine.buildNpv ===');
+    console.log('WACC:', wacc);
+    console.log('Cashflows:', JSON.stringify(cashflows, null, 2));
+
     let npv = cashflows[0].fcf;
+    console.log('Year 0 FCF (no discount):', cashflows[0].fcf);
+
     for (let i = 1; i < cashflows.length; i += 1) {
       const t = cashflows[i].year;
-      const pv = this.buildPresentValue(cashflows[i].fcf, wacc, t);
+      const fcf = cashflows[i].fcf;
+      const pv = this.buildPresentValue(fcf, wacc, t);
+      console.log(`Year ${t}: FCF=${fcf}, PV=${pv.toFixed(2)}`);
       npv += pv;
     }
+
+    console.log('Final NPV:', npv);
+    console.log('========================================');
     return npv;
   }
 
@@ -687,7 +728,7 @@ export class CalculationEngine {
     bySku: SkuCalcOutput[],
     volumes: { year: number; volumePieces: number; weightKg: number }[]
   ): PriceYear[] {
-    const years = 5;
+    const years = CALCULATION_CONFIG.YEARS;
     const out: PriceYear[] = [];
 
     for (let year = 1; year <= years; year += 1) {
@@ -769,7 +810,7 @@ export class CalculationEngine {
     pnl: PnlYear[],
     volumes: { year: number; volumePieces: number; weightKg: number }[]
   ): WeightedAvgPricePerKgYear[] {
-    const years = 5;
+    const years = CALCULATION_CONFIG.YEARS;
     const out: WeightedAvgPricePerKgYear[] = [];
 
     for (let year = 1; year <= years; year += 1) {

@@ -62,8 +62,8 @@ export type CostingInput = {
   freightOutRsPerPiece?: number;
   wastagePct: number; // 0..1 on resin and MB
   mbRatioPct: number; // 0..1 of resin replaced by MB
-  conversionInflationPct: number[]; // length 5, compounded YoY for conversion and per-piece lines
-  rmInflationPct: number[]; // length 5, compounded YoY for RM/MB
+  conversionInflationPct: number[]; // length 10, compounded YoY for conversion and per-piece lines
+  rmInflationPct: number[]; // length 10, compounded YoY for RM/MB
   useMbPriceOverride?: boolean; // if false, derive MB cost from resin price
 };
 
@@ -74,6 +74,7 @@ export type FinanceInput = {
   costOfDebtPct: number; // APR e.g. 0.12
   costOfEquityPct: number; // e.g. 0.18
   corporateTaxRatePct: number; // e.g. 0.25
+  waccPct?: number; // WACC percentage e.g. 0.14 (14%), optional override
 };
 
 export type AltConversionInput = {
@@ -104,7 +105,7 @@ export type BusinessCase = {
 };
 
 export type YearVolumes = {
-  year: number; // 1..5
+  year: number; // 1..10
   volumePieces: number;
   weightKg: number;
 };
@@ -244,6 +245,7 @@ export type SensitivityResponse = {
 export type ScenarioDefinition = {
   id: string;
   name: string;
+  description?: string; // Optional description for better UI experience
   overrides: Record<string, number>; // dot-path to numeric field => absolute value
 };
 

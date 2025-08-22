@@ -93,6 +93,23 @@ export default function FinanceEditor({
         }}
         onAutoSave={onAutoSave}
       />
+      <LabeledInput
+        label="WACC (%)"
+        type="number"
+        step={0.1}
+        value={Math.round((scenario.finance.waccPct || 0.14) * 100 * 10) / 10}
+        onChange={(v) => {
+          const newWacc = Number(v) / 100;
+          onUpdate((s) => ({
+            ...s,
+            finance: {
+              ...s.finance,
+              waccPct: newWacc,
+            },
+          }));
+        }}
+        onAutoSave={onAutoSave}
+      />
       <div className="flex items-center space-x-2">
         <input
           type="checkbox"
