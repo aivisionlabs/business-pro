@@ -74,7 +74,7 @@ src/lib/calc/
 import { CalculationEngine } from '@/lib/calc/engines';
 
 // All calculations available in one place
-const volumes = CalculationEngine.calculateVolumes(weight, pieces);
+const volumes = CalculationEngine.calculateVolumes(weight, pieces, growthRate);
 const prices = CalculationEngine.buildPriceByYear(sales, costing, npd, ops);
 const pnl = CalculationEngine.calculateAggregatedPnl(calc, scenario);
 ```

@@ -4,7 +4,6 @@ import {
   BusinessCase,
   ObjectiveConfig,
   OutcomeMetric,
-  PerturbationSpec,
   SensitivityResponse,
 } from "@/lib/types";
 
@@ -17,41 +16,45 @@ const DEFAULT_OBJECTIVE: ObjectiveConfig = {
 };
 
 // Available variables for configuration
-const AVAILABLE_VARIABLES = [
-  {
-    id: "skus.0.costing.resinRsPerKg",
-    label: "Resin Cost (Rs/Kg)",
-    category: "Costing",
-  },
+const AVAILABLE_VARIABLES: Array<{
+  id: string;
+  label: string;
+  category: string;
+  formula?: string;
+}> = [
   {
     id: "skus.0.sales.baseAnnualVolumePieces",
     label: "Annual Volume (Pieces)",
     category: "Sales",
+    formula: "Direct input: baseAnnualVolumePieces × growthFactor(year)",
   },
+
   {
-    id: "skus.0.sales.netPricePerPiece",
-    label: "Net Price per Piece",
+    id: "skus.0.sales.conversionRecoveryRsPerPiece",
+    label: "Conversion Recovery (Rs/Piece)",
     category: "Sales",
+    formula: "Direct input or derived from machineRatePerDayRs / unitsPerDay",
   },
   {
-    id: "finance.costOfDebtPct",
-    label: "Cost of Debt (%)",
-    category: "Finance",
-  },
-  {
-    id: "finance.equityContributionPct",
-    label: "Equity Contribution (%)",
-    category: "Finance",
-  },
-  {
-    id: "skus.0.costing.laborRsPerKg",
-    label: "Labor Cost (Rs/Kg)",
+    id: "skus.0.costing.mbRsPerKg",
+    label: "Master Batch Price (Rs/Kg)",
     category: "Costing",
+    formula:
+      "Direct input or derived from resinRsPerKg if useMbPriceOverride = false",
   },
   {
-    id: "skus.0.costing.overheadRsPerKg",
-    label: "Overhead Cost (Rs/Kg)",
+    id: "skus.0.costing.packagingRsPerKg",
+    label: "Packaging (Rs/Kg)",
     category: "Costing",
+    formula:
+      "Direct input or derived from packagingRsPerPiece / productWeightKg",
+  },
+  {
+    id: "skus.0.plantMaster.conversionPerKg",
+    label: "Plant Conversion Cost (Rs/Kg)",
+    category: "Plant",
+    formula:
+      "From plant-master.json: manpower + power + R&M + otherMfg + plantSGA",
   },
 ];
 
@@ -60,9 +63,7 @@ export default function RiskSensitivity({ scenario }: Props) {
   const [data, setData] = useState<SensitivityResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedVariables, setSelectedVariables] = useState<string[]>([
-    "skus.0.costing.resinRsPerKg",
     "skus.0.sales.baseAnnualVolumePieces",
-    "finance.costOfDebtPct",
   ]);
   const [perturbationRange, setPerturbationRange] = useState(0.1); // 10% default
   const [showConfig, setShowConfig] = useState(false);
@@ -79,6 +80,13 @@ export default function RiskSensitivity({ scenario }: Props) {
       percent: true,
     }));
   }, [selectedVariables, perturbationRange]);
+
+  // Format helpers for consistent display in Crores with sign and 2 decimals
+  const formatCr = (value: number) => {
+    const cr = value / 1e7;
+    const sign = cr > 0 ? "+" : cr < 0 ? "" : "";
+    return `${sign}${cr.toFixed(2)} Cr`;
+  };
 
   async function run() {
     setLoading(true);
@@ -102,6 +110,12 @@ export default function RiskSensitivity({ scenario }: Props) {
           : null,
       } as Record<OutcomeMetric, number | null>;
 
+      // Debug logging
+      console.log("🔍 Sensitivity Analysis Debug:");
+      console.log("📊 Baseline:", baseline);
+      console.log("⚙️ Specs:", specs);
+      console.log("📋 Objective:", DEFAULT_OBJECTIVE);
+
       const resp = await fetch("/api/simulations/sensitivity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -114,6 +128,7 @@ export default function RiskSensitivity({ scenario }: Props) {
       });
       if (!resp.ok) throw new Error(`Request failed: ${resp.status}`);
       const json = await resp.json();
+      console.log("📈 Sensitivity Results:", json.data);
       setData(json.data as SensitivityResponse);
     } catch (e: any) {
       setError(e?.message || "Failed to run sensitivity");
@@ -155,7 +170,7 @@ export default function RiskSensitivity({ scenario }: Props) {
   };
 
   return (
-    <div className="w-full bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+    <div className="w-full bg-white rounded-xl shadow-lg border border-slate-200 p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">
@@ -233,16 +248,34 @@ export default function RiskSensitivity({ scenario }: Props) {
                 <button
                   key={variable.id}
                   onClick={() => toggleVariable(variable.id)}
-                  className={`p-3 rounded-lg border text-left transition-colors ${
+                  className={`p-3 rounded-lg border text-left transition-colors relative group ${
                     selectedVariables.includes(variable.id)
                       ? "border-blue-500 bg-blue-50 text-blue-700"
                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                   }`}
+                  title={
+                    variable.formula
+                      ? `Formula: ${variable.formula}`
+                      : undefined
+                  }
                 >
                   <div className="text-xs text-slate-500 mb-1">
                     {variable.category}
                   </div>
                   <div className="text-sm font-medium">{variable.label}</div>
+                  {variable.formula && (
+                    <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="w-4 h-4 text-blue-500">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -285,46 +318,206 @@ export default function RiskSensitivity({ scenario }: Props) {
             <div className="text-sm text-blue-800">
               <span className="font-medium">Baseline NPV:</span>{" "}
               <span className="font-bold text-lg">
-                {Math.round((data.baseline.NPV || 0) / 1e7) / 10} Cr
+                {formatCr(data.baseline.NPV || 0)}
               </span>
             </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">
+            <h3 className="text-xl font-semibold text-slate-800 mb-6">
               Tornado Chart - Variable Impact
             </h3>
-            <div className="space-y-3">
-              {ranked.slice(0, 10).map((row, index) => (
-                <div key={row.variableId} className="flex items-center gap-4">
-                  <div className="w-8 text-sm font-medium text-slate-600 text-right">
-                    {index + 1}
-                  </div>
-                  <div
-                    className="w-64 text-sm text-slate-700 truncate"
-                    title={row.variableId}
-                  >
-                    {AVAILABLE_VARIABLES.find((v) => v.id === row.variableId)
-                      ?.label || row.variableId}
-                  </div>
-                  <div className="flex-1 h-4 bg-slate-100 rounded-full relative overflow-hidden">
-                    <div
-                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full"
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          (row.impact || 0) > 0
-                            ? 10 + Math.log10(row.impact + 1) * 25
-                            : 0
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                  <div className="w-24 text-right text-sm font-mono text-slate-800">
-                    {Math.round((row.impact || 0) / 1e7) / 10} Cr
-                  </div>
+            <div className="flex items-center gap-6 mb-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded"></div>
+                <span className="text-slate-600">Positive Impact Range</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gradient-to-l from-rose-400 to-rose-600 rounded"></div>
+                <span className="text-slate-600">Negative Impact Range</span>
+              </div>
+            </div>
+
+            <div className="text-sm text-slate-600 mb-4">
+              <p>
+                Each bar shows the range of NPV impacts when varying this
+                variable. Green bars extend right (positive impact), red bars
+                extend left (negative impact).
+              </p>
+            </div>
+
+            {/* Chart Header with Axis Labels */}
+            <div className="flex items-center gap-6 mb-2 px-3">
+              <div className="w-10 text-sm font-medium text-slate-600 text-center">
+                Rank
+              </div>
+              <div className="w-72 text-sm font-medium text-slate-600">
+                Variable
+              </div>
+              <div className="flex-1 text-center">
+                <div className="text-sm font-medium text-slate-600 mb-1">
+                  NPV Impact Range
                 </div>
-              ))}
+                <div className="text-xs text-slate-500">
+                  Negative ← Baseline → Positive
+                </div>
+              </div>
+              <div className="w-28 text-sm font-medium text-slate-600 text-center">
+                Net Impact
+              </div>
+            </div>
+
+            {/* Y-axis line */}
+            <div className="flex items-center gap-6 mb-4">
+              <div className="w-10"></div>
+              <div className="w-72"></div>
+              <div className="flex-1 flex items-center justify-center">
+                <div className="w-px h-6 bg-slate-300"></div>
+              </div>
+              <div className="w-28"></div>
+            </div>
+
+            {/* X-axis tick marks and labels */}
+            <div className="flex items-center gap-6 mb-2">
+              <div className="w-10"></div>
+              <div className="w-72"></div>
+              <div className="flex-1 flex items-center justify-between px-2">
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-3 bg-slate-300"></div>
+                  <span className="text-xs text-slate-500 mt-1">
+                    Max Negative
+                  </span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-3 bg-slate-300"></div>
+                  <span className="text-xs text-slate-500 mt-1">Baseline</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-3 bg-slate-300"></div>
+                  <span className="text-xs text-slate-500 mt-1">
+                    Max Positive
+                  </span>
+                </div>
+              </div>
+              <div className="w-28"></div>
+            </div>
+
+            <div className="space-y-4">
+              {ranked
+                .slice(0, 10)
+                .filter(() => {
+                  const maxImpact = Math.max(
+                    ...ranked.map((r) => r.impact || 0)
+                  );
+                  return maxImpact > 0;
+                })
+                .map((row, index) => {
+                  const maxImpact = Math.max(
+                    ...ranked.map((r) => r.impact || 0)
+                  );
+
+                  // Get the actual variable data to show proper impact direction
+                  const variableData = data.results.filter(
+                    (r) => r.variableId === row.variableId
+                  );
+                  const baselineValue = data.baseline.NPV || 0;
+                  const maxPositiveImpact = Math.max(
+                    ...variableData.map(
+                      (r) => (r.metrics.NPV || 0) - baselineValue
+                    )
+                  );
+                  const maxNegativeImpact = Math.min(
+                    ...variableData.map(
+                      (r) => (r.metrics.NPV || 0) - baselineValue
+                    )
+                  );
+                  const actualImpact = maxPositiveImpact - maxNegativeImpact;
+
+                  return (
+                    <div
+                      key={row.variableId}
+                      className="flex items-center gap-6 p-3 rounded-lg hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="w-10 text-sm font-medium text-slate-600 text-right">
+                        {index + 1}
+                      </div>
+                      <div
+                        className="w-72 text-sm font-medium text-slate-700 truncate"
+                        title={row.variableId}
+                      >
+                        {AVAILABLE_VARIABLES.find(
+                          (v) => v.id === row.variableId
+                        )?.label || row.variableId}
+                      </div>
+
+                      {/* Chart area with axis and bars */}
+                      <div className="flex-1 relative">
+                        {/* X-axis line */}
+                        <div className="absolute top-1/2 left-0 right-0 h-px bg-slate-300 transform -translate-y-1/2"></div>
+
+                        {/* Grid lines for better readability */}
+                        <div className="absolute top-1/4 left-0 right-0 h-px bg-slate-200"></div>
+                        <div className="absolute top-3/4 left-0 right-0 h-px bg-slate-200"></div>
+
+                        {/* Bar container */}
+                        <div className="relative h-6 flex items-center justify-center">
+                          {/* Center point indicator */}
+                          <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-slate-600 rounded-full transform -translate-x-1/2 -translate-y-1/2 z-10"></div>
+
+                          {/* Background track */}
+                          <div className="w-full h-6 bg-slate-100 rounded-full relative shadow-inner">
+                            {/* Positive impact bar (right side from center) */}
+                            {maxPositiveImpact > 0 && (
+                              <div
+                                className="absolute inset-y-0 left-1/2 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-r-full transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer ring-1 ring-emerald-600/20"
+                                style={{
+                                  width: `${Math.max(
+                                    (maxPositiveImpact / maxImpact) * 50,
+                                    0.6
+                                  )}%`,
+                                }}
+                                title={`Positive impact: ${formatCr(
+                                  maxPositiveImpact
+                                )}`}
+                              />
+                            )}
+
+                            {/* Negative impact bar (left side from center) */}
+                            {maxNegativeImpact < 0 && (
+                              <div
+                                className="absolute inset-y-0 right-1/2 bg-gradient-to-l from-rose-400 to-rose-600 rounded-l-full transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer ring-1 ring-rose-600/20"
+                                style={{
+                                  width: `${Math.max(
+                                    (Math.abs(maxNegativeImpact) / maxImpact) *
+                                      50,
+                                    0.6
+                                  )}%`,
+                                }}
+                                title={`Negative impact: ${formatCr(
+                                  maxNegativeImpact
+                                )}`}
+                              />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Left side label (negative impact) */}
+                        <div className="absolute left-0 top-8 text-xs text-slate-500 font-medium">
+                          {formatCr(maxNegativeImpact)}
+                        </div>
+
+                        {/* Right side label (positive impact) */}
+                        <div className="absolute right-0 top-8 text-xs text-slate-500 font-medium">
+                          {formatCr(maxPositiveImpact)}
+                        </div>
+                      </div>
+
+                      <div className="w-28 text-right text-sm font-mono text-slate-800">
+                        {formatCr(actualImpact)}
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>

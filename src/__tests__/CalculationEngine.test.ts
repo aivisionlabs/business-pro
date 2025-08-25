@@ -9,8 +9,6 @@ function createTestPnlYear(year: number): PnlYear {
     revenueNet: 950000,
     materialCost: 400000,
     materialMargin: 550000,
-    powerCost: 50000,
-    manpowerCost: 80000,
     valueAddCost: 20000,
     packagingCost: 30000,
     freightOutCost: 25000,
@@ -101,8 +99,8 @@ function createTestSku(): Sku {
       valueAddRsPerPiece: 2,
       packagingRsPerKg: 15,
       freightOutRsPerKg: 8,
-      rmInflationPct: [0, 0.05, 0.03, 0.04, 0.02],
-      conversionInflationPct: [0, 0.03, 0.02, 0.03, 0.02],
+      rmInflationPct: [0, 0, 0, 0, 0],
+      conversionInflationPct: [0, 0, 0, 0, 0],
     },
     plantMaster: {
       powerRatePerUnit: 8,
@@ -131,6 +129,7 @@ function createTestScenario(): BusinessCase {
       costOfEquityPct: 0.12,
       corporateTaxRatePct: 0.25,
       includeCorpSGA: true,
+      annualVolumeGrowthPct: 0.05,
     },
   };
 }
@@ -173,12 +172,29 @@ describe('CalculationEngine', () => {
     });
 
     it('should calculate volumes correctly', () => {
-      const result = CalculationEngine.calculateVolumes(100, 10000);
+      const result = CalculationEngine.calculateVolumes(100, 10000, 0);
 
-      expect(result).toHaveLength(5);
+      expect(result).toHaveLength(10);
       expect(result[0].year).toBe(1);
       expect(result[0].volumePieces).toBe(10000);
       expect(result[0].weightKg).toBe(1000); // 100g * 10000 pieces = 1000kg
+    });
+
+    it('should calculate volumes with growth correctly', () => {
+      const result = CalculationEngine.calculateVolumes(100, 10000, 0.1); // 10% growth
+
+      expect(result).toHaveLength(10);
+      expect(result[0].year).toBe(1);
+      expect(result[0].volumePieces).toBe(10000);
+      expect(result[0].weightKg).toBe(1000);
+
+      expect(result[1].year).toBe(2);
+      expect(result[1].volumePieces).toBe(11000); // 10000 * (1 + 0.1)
+      expect(result[1].weightKg).toBe(1100);
+
+      expect(result[2].year).toBe(3);
+      expect(result[2].volumePieces).toBeCloseTo(12100, 0); // 11000 * (1 + 0.1)
+      expect(result[2].weightKg).toBeCloseTo(1210, 0);
     });
   });
 
@@ -205,7 +221,7 @@ describe('CalculationEngine', () => {
         sku.ops
       );
 
-      expect(result).toHaveLength(5);
+      expect(result).toHaveLength(10);
       expect(result[0].year).toBe(1);
       expect(result[0].perKg.rmPerKg).toBeCloseTo(82.62, 2);
       expect(result[0].perKg.mbPerKg).toBeCloseTo(12.39, 2);
@@ -214,7 +230,7 @@ describe('CalculationEngine', () => {
 
   describe('Core P&L Calculations', () => {
     it('should calculate revenue correctly', () => {
-      const price = { pricePerPiece: 95, perKg: {} as any };
+      const price = { year: 1, pricePerPiece: 95, perKg: {} as any } as any;
       const result = CalculationEngine.buildRevenueGross(price, 10000);
       expect(result).toBe(950000);
     });

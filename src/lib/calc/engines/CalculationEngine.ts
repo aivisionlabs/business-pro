@@ -40,13 +40,24 @@ export class CalculationEngine {
   static calculateVolumes(
     productWeightGrams: number,
     baseAnnualVolumePieces: number,
+    annualVolumeGrowthPct: number = 0,
   ): YearVolumes[] {
     const productWeightKg = toKg(productWeightGrams);
     const years = CALCULATION_CONFIG.YEARS;
     const results: YearVolumes[] = [];
+
     for (let year = 1; year <= years; year += 1) {
-      const volumePieces = baseAnnualVolumePieces;
+      let volumePieces: number;
+      if (year === 1) {
+        volumePieces = baseAnnualVolumePieces;
+      } else {
+        // For year 2 onwards: previous year volume * (1 + growth rate)
+        const previousYearVolume = results[year - 2].volumePieces;
+        volumePieces = previousYearVolume * (1 + annualVolumeGrowthPct);
+      }
+
       const weightKg = volumePieces * productWeightKg;
+
       results.push({ year, volumePieces, weightKg });
     }
     return results;
@@ -461,7 +472,7 @@ export class CalculationEngine {
    */
   static buildPresentValue(fcf: number, wacc: number, year: number): number {
     const pv = fcf / Math.pow(1 + wacc, year);
-    console.log(`  buildPresentValue: ${fcf} / (1 + ${wacc})^${year} = ${fcf} / ${Math.pow(1 + wacc, year).toFixed(4)} = ${pv.toFixed(2)}`);
+    console.log(`  buildPresentValue: ${fcf} / (1 + ${wacc})^${year} = ${fcf} / ${Math.pow(1 + wacc, year).toFixed(4)} = ${pv.toFixed(6)}`);
     return pv;
   }
 
@@ -469,12 +480,7 @@ export class CalculationEngine {
    * Calculate NPV
    */
   static buildNpv(cashflows: any[], wacc: number): number {
-    console.log('=== CalculationEngine.buildNpv ===');
-    console.log('WACC:', wacc);
-    console.log('Cashflows:', JSON.stringify(cashflows, null, 2));
-
     let npv = cashflows[0].fcf;
-    console.log('Year 0 FCF (no discount):', cashflows[0].fcf);
 
     for (let i = 1; i < cashflows.length; i += 1) {
       const t = cashflows[i].year;
@@ -523,7 +529,7 @@ export class CalculationEngine {
     annualDepreciationByYear: number[],
     cashflows: any[]
   ): { year: number; roce: number; netBlock: number }[] {
-    return pnl.map((y, idx) => {
+    return pnl.map((y) => {
       // Calculate RoCE based on EBIT and working capital only (removed capex dependency)
       const roce = (y.ebit || 0) / Math.max(1e-9,
         (cashflows.find((c) => c.year === y.year)?.nwc || 0));
@@ -807,20 +813,26 @@ export class CalculationEngine {
    */
   static buildWeightedAvgPricePerKgTable(
     bySku: SkuCalcOutput[],
-    pnl: PnlYear[],
-    volumes: { year: number; volumePieces: number; weightKg: number }[]
+    _pnl: PnlYear[],
+    _volumes: { year: number; volumePieces: number; weightKg: number }[]
   ): WeightedAvgPricePerKgYear[] {
+    // Suppress unused param warnings while keeping signature compatible with callers
+    void _pnl; void _volumes;
     const years = CALCULATION_CONFIG.YEARS;
     const out: WeightedAvgPricePerKgYear[] = [];
 
+    // Establish baseline (Y1) weight shares across SKUs to make per-kg mix-invariant
+    const baselineWeights = bySku.map((s) => s.volumes?.[0]?.weightKg || 0);
+    const totalBaselineWeight = baselineWeights.reduce((sum, w) => sum + w, 0);
+
     for (let year = 1; year <= years; year += 1) {
       const idx = year - 1;
-      const yearPnl = pnl[idx];
-      const yearVolumes = volumes[idx];
-      const totalWeightKg = yearVolumes?.weightKg || 0;
 
-      if (!yearPnl || totalWeightKg <= 0) {
-        // Create empty entry if no data
+      // If no baseline weight (edge case), fall back to current year's total to avoid division by zero
+      const fallbackTotalWeight = bySku.reduce((sum, s) => sum + (s.volumes?.[idx]?.weightKg || 0), 0);
+      const denom = totalBaselineWeight > 0 ? totalBaselineWeight : fallbackTotalWeight;
+
+      if (denom <= 0) {
         out.push({
           year,
           revenueNetPerKg: 0,
@@ -839,19 +851,54 @@ export class CalculationEngine {
         continue;
       }
 
-      // Convert P&L values to per-kg by dividing by total weight
-      const revenueNetPerKg = yearPnl.revenueNet / totalWeightKg;
-      const materialCostPerKg = yearPnl.materialCost / totalWeightKg;
-      const materialMarginPerKg = yearPnl.materialMargin / totalWeightKg;
-      const conversionCostPerKg = yearPnl.conversionCost / totalWeightKg;
-      const grossMarginPerKg = yearPnl.grossMargin / totalWeightKg;
-      const sgaCostPerKg = yearPnl.sgaCost / totalWeightKg;
-      const ebitdaPerKg = yearPnl.ebitda / totalWeightKg;
-      const depreciationPerKg = yearPnl.depreciation / totalWeightKg;
-      const ebitPerKg = yearPnl.ebit / totalWeightKg;
-      const interestPerKg = yearPnl.interestCapex / totalWeightKg;
-      const pbtPerKg = yearPnl.pbt / totalWeightKg;
-      const patPerKg = yearPnl.pat / totalWeightKg;
+      let revenueNetPerKg = 0;
+      let materialCostPerKg = 0;
+      let materialMarginPerKg = 0;
+      let conversionCostPerKg = 0;
+      let grossMarginPerKg = 0;
+      let sgaCostPerKg = 0;
+      let ebitdaPerKg = 0;
+      let depreciationPerKg = 0;
+      let ebitPerKg = 0;
+      let interestPerKg = 0;
+      let pbtPerKg = 0;
+      let patPerKg = 0;
+
+      for (let j = 0; j < bySku.length; j += 1) {
+        const sku = bySku[j];
+        const y = sku.pnl?.[idx];
+        const wkg = sku.volumes?.[idx]?.weightKg || 0;
+        const baseW = (totalBaselineWeight > 0 ? baselineWeights[j] : (sku.volumes?.[idx]?.weightKg || 0));
+        const share = baseW / denom;
+
+        if (!y || wkg <= 0 || share <= 0) continue;
+
+        const rNetKg = y.revenueNet / wkg;
+        const matCostKg = y.materialCost / wkg;
+        const matMarginKg = y.materialMargin / wkg;
+        const convCostKg = y.conversionCost / wkg;
+        const grossMarginKg = y.grossMargin / wkg;
+        const sgaKg = y.sgaCost / wkg;
+        const ebitdaKg = y.ebitda / wkg;
+        const depKg = y.depreciation / wkg;
+        const ebitKg = y.ebit / wkg;
+        const interestKg = y.interestCapex / wkg;
+        const pbtKg = y.pbt / wkg;
+        const patKg = y.pat / wkg;
+
+        revenueNetPerKg += rNetKg * share;
+        materialCostPerKg += matCostKg * share;
+        materialMarginPerKg += matMarginKg * share;
+        conversionCostPerKg += convCostKg * share;
+        grossMarginPerKg += grossMarginKg * share;
+        sgaCostPerKg += sgaKg * share;
+        ebitdaPerKg += ebitdaKg * share;
+        depreciationPerKg += depKg * share;
+        ebitPerKg += ebitKg * share;
+        interestPerKg += interestKg * share;
+        pbtPerKg += pbtKg * share;
+        patPerKg += patKg * share;
+      }
 
       out.push({
         year,

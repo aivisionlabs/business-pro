@@ -1,19 +1,24 @@
 "use client";
-import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { calculateScenario } from "@/lib/calc";
-import { BusinessCase as Scenario, PlantMaster, Sku } from "@/lib/types";
+import { CalculationEngine } from "@/lib/calc/engines";
+import { PlantMaster, BusinessCase as Scenario, Sku } from "@/lib/types";
 import { nanoid } from "nanoid";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 // import CaseMetricsCharts from "@/components/CaseMetricsCharts";
-import { Section } from "./common";
-import FinanceEditor from "./FinanceEditor";
-import SkuEditor from "./SkuEditor";
+import { Section, LabeledInput } from "./common";
+import FreeCashFlow from "./FreeCashFlow";
 import PnlAggregated from "./PnlAggregated";
 import PnlPerKg from "./PnlPerKg";
-import FreeCashFlow from "./FreeCashFlow";
-import { CalculationEngine } from "@/lib/calc/engines";
+
 import { formatCrores, formatPct } from "@/lib/utils";
-import RiskSensitivity from "./RiskSensitivity";
 import RiskScenarios from "./RiskScenarios";
+import RiskSensitivity from "./RiskSensitivity";
+import {
+  NpdTeamCard,
+  OpsTeamCard,
+  PricingTeamCard,
+  SalesTeamCard,
+} from "./team-cards";
 
 // Custom hook for autosaving functionality
 function useAutoSave(
@@ -47,6 +52,143 @@ function useAutoSave(
   return { triggerAutoSave, autoSaveTimer };
 }
 
+// Progress calculation helper
+function calculateCardProgress(
+  sku: Sku,
+  team: string
+): { percentage: number; filledFields: number; totalFields: number } {
+  const fieldConfigs: Record<
+    string,
+    Array<{
+      field: string;
+      path: string;
+      mandatory: boolean;
+      prefilled?: boolean;
+    }>
+  > = {
+    sales: [
+      { field: "name", path: "name", mandatory: true },
+      {
+        field: "baseAnnualVolumePieces",
+        path: "sales.baseAnnualVolumePieces",
+        mandatory: true,
+      },
+      {
+        field: "conversionRecoveryRsPerPiece",
+        path: "sales.conversionRecoveryRsPerPiece",
+        mandatory: true,
+      },
+      {
+        field: "productWeightGrams",
+        path: "sales.productWeightGrams",
+        mandatory: true,
+      },
+    ],
+    pricing: [
+      { field: "resinRsPerKg", path: "costing.resinRsPerKg", mandatory: true },
+      {
+        field: "freightOutRsPerKg",
+        path: "costing.freightOutRsPerKg",
+        mandatory: true,
+      },
+      { field: "mbRsPerKg", path: "costing.mbRsPerKg", mandatory: true },
+      {
+        field: "packagingRsPerKg",
+        path: "costing.packagingRsPerKg",
+        mandatory: true,
+      },
+    ],
+    npd: [
+      { field: "cavities", path: "npd.cavities", mandatory: true },
+      {
+        field: "cycleTimeSeconds",
+        path: "npd.cycleTimeSeconds",
+        mandatory: true,
+      },
+      {
+        field: "productWeightGrams",
+        path: "sales.productWeightGrams",
+        mandatory: true,
+      },
+      { field: "plant", path: "plantMaster.plant", mandatory: true },
+    ],
+    ops: [
+      {
+        field: "newMachineRequired",
+        path: "ops.newMachineRequired",
+        mandatory: true,
+      },
+      {
+        field: "newMouldRequired",
+        path: "ops.newMouldRequired",
+        mandatory: true,
+      },
+      { field: "machineName", path: "npd.machineName", mandatory: true },
+      {
+        field: "costOfNewMachine",
+        path: "ops.costOfNewMachine",
+        mandatory: true,
+      },
+      {
+        field: "costOfOldMachine",
+        path: "ops.costOfOldMachine",
+        mandatory: true,
+      },
+      { field: "costOfNewMould", path: "ops.costOfNewMould", mandatory: true },
+      { field: "costOfOldMould", path: "ops.costOfOldMould", mandatory: true },
+      { field: "costOfNewInfra", path: "ops.costOfNewInfra", mandatory: true },
+      { field: "costOfOldInfra", path: "ops.costOfOldInfra", mandatory: true },
+    ],
+  };
+
+  const config = fieldConfigs[team as keyof typeof fieldConfigs];
+  if (!config) return { percentage: 0, filledFields: 0, totalFields: 0 };
+
+  let completedFields = 0;
+  let totalFields = 0;
+
+  config.forEach(({ path, mandatory, prefilled }) => {
+    if (mandatory || prefilled) {
+      totalFields++;
+      let value: any;
+      if (path === "name") {
+        value = sku.name;
+      } else if (path.startsWith("sales.")) {
+        const key = path.split(".")[1] as keyof typeof sku.sales;
+        value = sku.sales[key];
+      } else if (path.startsWith("npd.")) {
+        const key = path.split(".")[1] as keyof typeof sku.npd;
+        value = sku.npd[key];
+      } else if (path.startsWith("ops.")) {
+        const key = path.split(".")[1] as keyof typeof sku.ops;
+        value = sku.ops[key];
+      } else if (path.startsWith("costing.")) {
+        const key = path.split(".")[1] as keyof typeof sku.costing;
+        value = sku.costing[key];
+      } else if (path.startsWith("plantMaster.")) {
+        const key = path.split(".")[1] as keyof typeof sku.plantMaster;
+        value = sku.plantMaster[key];
+      } else if (path.startsWith("finance.")) {
+        // For finance fields, we need to access scenario.finance
+        return; // Skip for now, will handle separately
+      }
+
+      if (
+        prefilled ||
+        (value !== undefined && value !== null && value !== "")
+      ) {
+        completedFields++;
+      }
+    }
+  });
+
+  return {
+    percentage: totalFields > 0 ? (completedFields / totalFields) * 100 : 100,
+    filledFields: completedFields,
+    totalFields: totalFields,
+  };
+}
+
 export default function MultiSkuEditor({
   scenario: initial,
   plantOptions,
@@ -59,10 +201,12 @@ export default function MultiSkuEditor({
     initial.skus[0]?.id || ""
   );
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+
+  // State for collapsible P&L sections
+  const [pnlPerKgCollapsed, setPnlPerKgCollapsed] = useState(false);
+  const [pnlAggregatedCollapsed, setPnlAggregatedCollapsed] = useState(false);
+  const [freeCashFlowCollapsed, setFreeCashFlowCollapsed] = useState(false);
+
   const { triggerAutoSave, autoSaveTimer } = useAutoSave(
     scenario,
     handleSaveWithScenario
@@ -130,6 +274,7 @@ export default function MultiSkuEditor({
         costOfEquityPct: originalFinance.costOfEquityPct ?? 0,
         corporateTaxRatePct: originalFinance.corporateTaxRatePct ?? 0.25, // Default to 25%
         waccPct: originalFinance.waccPct ?? 0.14, // Default to 14%
+        annualVolumeGrowthPct: originalFinance.annualVolumeGrowthPct ?? 0,
       };
       // Check if any defaults were applied
       if (
@@ -152,14 +297,6 @@ export default function MultiSkuEditor({
       }, 1000);
     }
   }, [initial]);
-
-  // Clear save message after 3 seconds
-  useEffect(() => {
-    if (saveMessage) {
-      const timer = setTimeout(() => setSaveMessage(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [saveMessage]);
 
   const calc = useMemo(() => calculateScenario(scenario), [scenario]);
 
@@ -241,7 +378,6 @@ export default function MultiSkuEditor({
 
   async function handleSaveWithScenario(scenarioToSave: Scenario) {
     setIsSaving(true);
-    setSaveMessage(null);
 
     try {
       const response = await fetch(`/api/scenarios/${scenarioToSave.id}`, {
@@ -266,16 +402,11 @@ export default function MultiSkuEditor({
       console.log("handleSaveWithScenario - API response success:", result);
 
       if (result.success) {
-        setSaveMessage({ type: "success", text: "Case saved successfully!" });
       } else {
         throw new Error("Save failed");
       }
     } catch (error) {
       console.error("Save error:", error);
-      setSaveMessage({
-        type: "error",
-        text: error instanceof Error ? error.message : "Failed to save case",
-      });
     } finally {
       setIsSaving(false);
     }
@@ -285,6 +416,27 @@ export default function MultiSkuEditor({
     // Call the new function with current scenario state
     await handleSaveWithScenario(scenario);
   }
+
+  // Function to prevent scroll wheel from changing number input values
+  const preventScrollOnNumberInputs = (e: WheelEvent) => {
+    if (e.target instanceof HTMLInputElement && e.target.type === "number") {
+      e.preventDefault();
+    }
+  };
+
+  // Add event listener when component mounts
+  useEffect(() => {
+    document.addEventListener("wheel", preventScrollOnNumberInputs, {
+      passive: false,
+    });
+
+    return () => {
+      document.removeEventListener("wheel", preventScrollOnNumberInputs);
+    };
+  }, []);
+
+  // State for Finance card collapse
+  const [isFinanceCollapsed, setIsFinanceCollapsed] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -308,28 +460,141 @@ export default function MultiSkuEditor({
         </button>
       </div>
 
-      {saveMessage && (
-        <div
-          className={`p-3 rounded-lg ${
-            saveMessage.type === "success"
-              ? "bg-green-50 text-green-800"
-              : "bg-red-50 text-red-800"
-          }`}
-        >
-          {saveMessage.text}
-        </div>
-      )}
-
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+        {/* Left column - Team cards */}
         <div className="xl:col-span-3 space-y-4">
-          {/* Finance Inputs */}
-          <Section title="💰 Finance Inputs">
-            <FinanceEditor
-              scenario={scenario}
-              onUpdate={setScenario}
-              onAutoSave={triggerAutoSave}
-            />
-          </Section>
+          {/* Finance Team Card - Fixed at top */}
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+            <div className="p-4 border-b border-slate-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Finance
+                </h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                    Finance
+                  </span>
+                  <button
+                    onClick={() => setIsFinanceCollapsed(!isFinanceCollapsed)}
+                    className="text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {isFinanceCollapsed ? (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 15l7-7 7 7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+            {!isFinanceCollapsed && (
+              <div className="p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <LabeledInput
+                    label="Tax Rate (%)"
+                    type="number"
+                    step={0.01}
+                    value={(scenario.finance.corporateTaxRatePct || 0.25) * 100}
+                    onChange={(v) =>
+                      setScenario((s) => ({
+                        ...s,
+                        finance: {
+                          ...s.finance,
+                          corporateTaxRatePct: Number(v) / 100,
+                        },
+                      }))
+                    }
+                    onAutoSave={triggerAutoSave}
+                  />
+                  <LabeledInput
+                    label="Debt Percentage (%)"
+                    type="number"
+                    step={0.01}
+                    value={(scenario.finance.debtPct || 1) * 100}
+                    onChange={(v) =>
+                      setScenario((s) => ({
+                        ...s,
+                        finance: { ...s.finance, debtPct: Number(v) / 100 },
+                      }))
+                    }
+                    onAutoSave={triggerAutoSave}
+                  />
+                  <LabeledInput
+                    label="Cost of Debt (%)"
+                    type="number"
+                    step={0.01}
+                    value={(scenario.finance.costOfDebtPct || 0.087) * 100}
+                    onChange={(v) =>
+                      setScenario((s) => ({
+                        ...s,
+                        finance: {
+                          ...s.finance,
+                          costOfDebtPct: Number(v) / 100,
+                        },
+                      }))
+                    }
+                    onAutoSave={triggerAutoSave}
+                  />
+                  <LabeledInput
+                    label="Cost of Equity (%)"
+                    type="number"
+                    step={0.01}
+                    value={(scenario.finance.costOfEquityPct || 0.18) * 100}
+                    onChange={(v) =>
+                      setScenario((s) => ({
+                        ...s,
+                        finance: {
+                          ...s.finance,
+                          costOfEquityPct: Number(v) / 100,
+                        },
+                      }))
+                    }
+                    onAutoSave={triggerAutoSave}
+                  />
+                  <LabeledInput
+                    label="Annual Volume Growth (%)"
+                    type="number"
+                    step={0.01}
+                    value={(scenario.finance.annualVolumeGrowthPct || 0) * 100}
+                    onChange={(v) =>
+                      setScenario((s) => ({
+                        ...s,
+                        finance: {
+                          ...s.finance,
+                          annualVolumeGrowthPct: Number(v) / 100,
+                        },
+                      }))
+                    }
+                    onAutoSave={triggerAutoSave}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* SKU Tabs */}
           <Section title="SKUs">
@@ -362,64 +627,249 @@ export default function MultiSkuEditor({
             </div>
           </Section>
 
-          {/* SKU Editor */}
-          <Section title="SKU Details">
-            <SkuEditor
+          {/* Team-Based Cards */}
+          <div className="space-y-4">
+            {/* Sales Team Card */}
+            <SalesTeamCard
+              sku={sku}
+              updateSku={updateSku}
+              triggerAutoSave={triggerAutoSave}
+              progress={calculateCardProgress(sku, "sales").percentage}
+              filledFields={calculateCardProgress(sku, "sales").filledFields}
+              totalFields={calculateCardProgress(sku, "sales").totalFields}
+            />
+
+            {/* Pricing Team Card */}
+            <PricingTeamCard
+              sku={sku}
+              updateSku={updateSku}
+              triggerAutoSave={triggerAutoSave}
+              progress={calculateCardProgress(sku, "pricing").percentage}
+              filledFields={calculateCardProgress(sku, "pricing").filledFields}
+              totalFields={calculateCardProgress(sku, "pricing").totalFields}
+            />
+
+            {/* NPD Team Card */}
+            <NpdTeamCard
               sku={sku}
               plantOptions={plantOptions}
-              onUpdate={updateSku}
-              onAutoSave={triggerAutoSave}
+              updateSku={updateSku}
+              triggerAutoSave={triggerAutoSave}
+              progress={calculateCardProgress(sku, "npd").percentage}
+              filledFields={calculateCardProgress(sku, "npd").filledFields}
+              totalFields={calculateCardProgress(sku, "npd").totalFields}
             />
-          </Section>
+
+            {/* Ops Team Card */}
+            <OpsTeamCard
+              sku={sku}
+              updateSku={updateSku}
+              triggerAutoSave={triggerAutoSave}
+              progress={calculateCardProgress(sku, "ops").percentage}
+              filledFields={calculateCardProgress(sku, "ops").filledFields}
+              totalFields={calculateCardProgress(sku, "ops").totalFields}
+            />
+          </div>
         </div>
 
-        {/* Right column - Aggregated metrics */}
-        <div className="xl:col-span-2 space-y-4">
-          <Section title="Key Aggregated Metrics">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
-                <div className="text-xs text-slate-600 mb-1">Revenue (Y1)</div>
-                <div className="text-lg font-semibold text-slate-900">
-                  {formatCrores(calc.pnl[0]?.revenueNet || 0)}
+        {/* Right column - Aggregated metrics with independent scroll */}
+        <div className="xl:col-span-2 flex flex-col h-[calc(100vh-100px)]">
+          {/* Sticky Key Metrics - Always visible at top */}
+          <div className="flex-shrink-0 mb-4">
+            <div className="sticky top-4 z-10 bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
+              <Section title="Key Aggregated Metrics">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                    <div className="text-xs text-slate-600 mb-1">
+                      Revenue (Y1)
+                    </div>
+                    <div className="text-lg font-semibold text-slate-900">
+                      {formatCrores(calc.pnl[0]?.revenueNet || 0)}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                    <div className="text-xs text-slate-600 mb-1">
+                      EBITDA (Y1)
+                    </div>
+                    <div className="text-lg font-semibold text-slate-900">
+                      {formatCrores(calc.pnl[0]?.ebitda || 0)}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                    <div className="text-xs text-slate-600 mb-1">NPV</div>
+                    <div className="text-lg font-semibold text-slate-900">
+                      {formatCrores(calc.returns.npv)}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                    <div className="text-xs text-slate-600 mb-1">IRR</div>
+                    <div className="text-lg font-semibold text-slate-900">
+                      {calc.returns.irr === null
+                        ? "—"
+                        : formatPct(calc.returns.irr)}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
-                <div className="text-xs text-slate-600 mb-1">EBITDA (Y1)</div>
-                <div className="text-lg font-semibold text-slate-900">
-                  {formatCrores(calc.pnl[0]?.ebitda || 0)}
-                </div>
-              </div>
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
-                <div className="text-xs text-slate-600 mb-1">NPV</div>
-                <div className="text-lg font-semibold text-slate-900">
-                  {formatCrores(calc.returns.npv)}
-                </div>
-              </div>
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
-                <div className="text-xs text-slate-600 mb-1">IRR</div>
-                <div className="text-lg font-semibold text-slate-900">
-                  {calc.returns.irr === null
-                    ? "—"
-                    : formatPct(calc.returns.irr)}
-                </div>
-              </div>
+              </Section>
             </div>
-          </Section>
+          </div>
 
-          {/* Weighted-average price per kg across SKUs */}
-          <Section title="P&L per kg (Y1..Y5)">
-            <PnlPerKg calc={calc} pnlAggregated={pnlAggregated} />
-          </Section>
+          {/* Scrollable container for all P&L and Cashflow tables */}
+          <div className="flex-1 overflow-y-auto space-y-4 pr-2 pb-6 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+            {/* P&L per kg - Collapsible */}
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+              <div className="p-4 border-b border-slate-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    P&L per kg (Y1..Y5)
+                  </h3>
+                  <button
+                    onClick={() => setPnlPerKgCollapsed(!pnlPerKgCollapsed)}
+                    className="text-slate-500 hover:text-slate-700 transition-colors"
+                  >
+                    {pnlPerKgCollapsed ? (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 15l7-7 7 7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+              {!pnlPerKgCollapsed && (
+                <div className="p-4">
+                  <PnlPerKg calc={calc} pnlAggregated={pnlAggregated} />
+                </div>
+              )}
+            </div>
 
-          {/* P&L (Aggregated) */}
-          <Section title="P&L (Aggregated)">
-            <PnlAggregated pnlAggregated={pnlAggregated} />
-          </Section>
+            {/* P&L Aggregated - Collapsible */}
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+              <div className="p-4 border-b border-slate-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    P&L (Aggregated) (in Crore)
+                  </h3>
+                  <button
+                    onClick={() =>
+                      setPnlAggregatedCollapsed(!pnlAggregatedCollapsed)
+                    }
+                    className="text-slate-500 hover:text-slate-700 transition-colors"
+                  >
+                    {pnlAggregatedCollapsed ? (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 15l7-7 7 7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+              {!pnlAggregatedCollapsed && (
+                <div className="p-4">
+                  <PnlAggregated pnlAggregated={pnlAggregated} />
+                </div>
+              )}
+            </div>
 
-          {/* Free Cash Flow */}
-          <Section title="Free Cash Flow Analysis">
-            <FreeCashFlow cashflow={calc.cashflow} pnl={calc.pnl} />
-          </Section>
+            {/* Free Cash Flow - Collapsible */}
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+              <div className="p-4 border-b border-slate-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Free Cash Flow Analysis
+                  </h3>
+                  <button
+                    onClick={() =>
+                      setFreeCashFlowCollapsed(!freeCashFlowCollapsed)
+                    }
+                    className="text-slate-500 hover:text-slate-700 transition-colors"
+                  >
+                    {freeCashFlowCollapsed ? (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 15l7-7 7 7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+              {!freeCashFlowCollapsed && (
+                <div className="p-4">
+                  <FreeCashFlow cashflow={calc.cashflow} pnl={calc.pnl} />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

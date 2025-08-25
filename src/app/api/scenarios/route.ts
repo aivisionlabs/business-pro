@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
         productWeightGrams: 0.3,
         conversionRecoveryRsPerPiece: 0,
         baseAnnualVolumePieces: 0,
+        annualVolumeGrowthPct: 0,
       },
       npd: {
         machineName: "",
@@ -98,6 +99,7 @@ export async function POST(req: NextRequest) {
         costOfDebtPct: 0,
         costOfEquityPct: 0,
         corporateTaxRatePct: 0.25,
+        annualVolumeGrowthPct: 0,
       },
       skus: [defaultSku as Sku], // Type assertion since we'll add ID after creation
     };

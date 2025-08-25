@@ -18,9 +18,6 @@ interface PnlPerKgProps {
 export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-slate-800">
-        P&L per kg (weighted average)
-      </h3>
       <div className="overflow-x-auto text-slate-900">
         <table className="min-w-full text-sm">
           <thead>

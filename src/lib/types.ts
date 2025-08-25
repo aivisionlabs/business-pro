@@ -75,6 +75,7 @@ export type FinanceInput = {
   costOfEquityPct: number; // e.g. 0.18
   corporateTaxRatePct: number; // e.g. 0.25
   waccPct?: number; // WACC percentage e.g. 0.14 (14%), optional override
+  annualVolumeGrowthPct: number; // Annual volume growth rate (0..1) applied to all SKUs centrally
 };
 
 export type AltConversionInput = {

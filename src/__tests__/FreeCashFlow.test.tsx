@@ -56,76 +56,43 @@ describe("FreeCashFlow", () => {
     },
   ];
 
-  const mockFinance = {
-    corporateTaxRatePct: 0.25,
-  };
+  it("renders expanded by default", () => {
+    render(<FreeCashFlow cashflow={mockCashflow} pnl={mockPnl} />);
 
-  it("renders collapsed by default", () => {
-    render(
-      <FreeCashFlow
-        cashflow={mockCashflow}
-        pnl={mockPnl}
-        finance={mockFinance}
-      />
-    );
-
-    expect(screen.getByText("Free Cash Flow Analysis")).toBeInTheDocument();
-    expect(screen.queryByText("EBIT")).not.toBeInTheDocument();
+    expect(screen.getByText("Close")).toBeInTheDocument();
+    expect(screen.getByText("EBITDA")).toBeInTheDocument();
   });
 
-  it("expands when clicked", () => {
-    render(
-      <FreeCashFlow
-        cashflow={mockCashflow}
-        pnl={mockPnl}
-        finance={mockFinance}
-      />
-    );
+  it("collapses when clicked", () => {
+    render(<FreeCashFlow cashflow={mockCashflow} pnl={mockPnl} />);
 
-    const button = screen.getByText("Free Cash Flow Analysis");
+    const button = screen.getByText("Close");
     fireEvent.click(button);
 
-    expect(screen.getByText("EBIT")).toBeInTheDocument();
-    expect(screen.getByText("Depreciation")).toBeInTheDocument();
-    expect(screen.getByText("Δ Working Capital")).toBeInTheDocument();
+    expect(screen.getByText("View Cashflow analysis")).toBeInTheDocument();
+    expect(screen.queryByText("EBITDA")).not.toBeInTheDocument();
   });
 
   it("displays correct FCF formula", () => {
-    render(
-      <FreeCashFlow
-        cashflow={mockCashflow}
-        pnl={mockPnl}
-        finance={mockFinance}
-      />
-    );
-
-    const button = screen.getByText("Free Cash Flow Analysis");
-    fireEvent.click(button);
+    render(<FreeCashFlow cashflow={mockCashflow} pnl={mockPnl} />);
 
     expect(
+      screen.getByText(/FCF = EBITDA - Interest - Tax - Δ Working Capital/)
+    ).toBeInTheDocument();
+    expect(
       screen.getByText(
-        /FCF = EBIT × \(1 - Tax Rate\) \+ Depreciation - Δ Working Capital/
+        /Where Δ Working Capital = Current Year NWC - Previous Year NWC/
       )
     ).toBeInTheDocument();
-    expect(screen.getByText(/Tax Rate: 25\.0%/)).toBeInTheDocument();
   });
 
   it("shows working capital impact explanation", () => {
-    render(
-      <FreeCashFlow
-        cashflow={mockCashflow}
-        pnl={mockPnl}
-        finance={mockFinance}
-      />
-    );
+    render(<FreeCashFlow cashflow={mockCashflow} pnl={mockPnl} />);
 
-    const button = screen.getByText("Free Cash Flow Analysis");
-    fireEvent.click(button);
-
-    expect(screen.getByText("Working Capital Impact")).toBeInTheDocument();
+    expect(screen.getByText("Free Cash Flow Formula")).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Working capital changes represent the cash tied up in operations/
+        /All values \(EBITDA, Interest, Tax\) are calculated from aggregated P&L across all SKUs/
       )
     ).toBeInTheDocument();
   });
