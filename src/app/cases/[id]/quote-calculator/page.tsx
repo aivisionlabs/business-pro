@@ -1,6 +1,6 @@
 "use client";
 
-import MultiSkuEditor from "@/components/MultiSkuEditor";
+import QuoteCalculator from "@/components/QuoteCalculator";
 import { useBusinessCase, usePlantMaster } from "@/lib/hooks/useFirestore";
 import Link from "next/link";
 import { use } from "react";
@@ -9,8 +9,11 @@ import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
+import Breadcrumbs from "@mui/material/Breadcrumbs";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
-export default function CaseDetail({
+export default function QuoteCalculatorPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -76,28 +79,53 @@ export default function CaseDetail({
     );
   }
 
-  // Note: charts are rendered inside MultiSkuEditor just above the debug panel
   return (
     <main>
       <Container maxWidth="xl" sx={{ py: 4, pt: 4 }}>
-        <MultiSkuEditor scenario={scenario} plantOptions={plants} />
-        <Box
-          textAlign="center"
-          mt={4}
-          sx={{ display: "flex", gap: 2, justifyContent: "center" }}
-        >
-          <Button
-            LinkComponent={Link}
-            href={`/cases/${id}/quote-calculator`}
-            variant="contained"
-            color="primary"
+        {/* Breadcrumbs */}
+        <Box sx={{ mb: 3 }}>
+          <Breadcrumbs
+            separator={<NavigateNextIcon fontSize="small" />}
+            aria-label="breadcrumb"
           >
+            <Link
+              href="/cases"
+              style={{ textDecoration: "none", color: "inherit" }}
+            >
+              Cases
+            </Link>
+            <Link
+              href={`/cases/${id}`}
+              style={{ textDecoration: "none", color: "inherit" }}
+            >
+              {scenario.name}
+            </Link>
+            <Typography color="text.primary">Quote Calculator</Typography>
+          </Breadcrumbs>
+        </Box>
+
+        {/* Page Header */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
             Quote Calculator
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Generate and manage customer quotations for {scenario.name}
+          </Typography>
+        </Box>
+
+        {/* Quote Calculator Component */}
+        <QuoteCalculator businessCase={scenario} />
+
+        {/* Navigation Buttons */}
+        <Box sx={{ mt: 4, display: "flex", gap: 2, justifyContent: "center" }}>
+          <Button LinkComponent={Link} href={`/cases/${id}`} variant="outlined">
+            Back to Case
           </Button>
           <Button
             LinkComponent={Link}
             href={`/cases/${id}/chat`}
-            variant="outlined"
+            variant="contained"
           >
             Open Chat for this Case
           </Button>

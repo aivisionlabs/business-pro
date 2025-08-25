@@ -2,6 +2,7 @@ import React from "react";
 import { Sku } from "@/lib/types";
 import { LabeledInput } from "../common";
 import { TeamCard } from "./TeamCard";
+import Box from "@mui/material/Box";
 
 interface SalesTeamCardProps {
   sku: Sku;
@@ -28,9 +29,15 @@ export function SalesTeamCard({
       filledFields={filledFields}
       totalFields={totalFields}
       isCollapsible={true}
-      defaultCollapsed={true}
+      defaultCollapsed={false}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+        }}
+      >
         <LabeledInput
           label="SKU Name"
           value={sku.name}
@@ -79,7 +86,7 @@ export function SalesTeamCard({
           }
           onAutoSave={triggerAutoSave}
         />
-      </div>
+      </Box>
     </TeamCard>
   );
 }

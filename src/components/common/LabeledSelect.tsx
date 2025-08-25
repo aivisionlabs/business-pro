@@ -1,4 +1,6 @@
 import React from "react";
+import TextField from "@mui/material/TextField";
+import MenuItem from "@mui/material/MenuItem";
 
 interface LabeledSelectProps {
   label: string;
@@ -15,29 +17,20 @@ export function LabeledSelect({
   onAutoSave,
   options,
 }: LabeledSelectProps) {
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
-
-    // Trigger autosave if provided
     if (onAutoSave) {
       onAutoSave();
     }
   };
 
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm text-slate-700">{label}</span>
-      <select
-        className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 bg-white"
-        value={value}
-        onChange={handleChange}
-      >
-        {options.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
-        ))}
-      </select>
-    </label>
+    <TextField select fullWidth size="small" label={label} value={value} onChange={handleChange}>
+      {options.map((o) => (
+        <MenuItem key={o} value={o}>
+          {o}
+        </MenuItem>
+      ))}
+    </TextField>
   );
 }

@@ -37,7 +37,6 @@ export async function POST(req: NextRequest) {
         productWeightGrams: 0.3,
         conversionRecoveryRsPerPiece: 0,
         baseAnnualVolumePieces: 0,
-        annualVolumeGrowthPct: 0,
       },
       npd: {
         machineName: "",

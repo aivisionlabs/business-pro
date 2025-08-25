@@ -44,6 +44,7 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
 
     for (const v of volumes) {
       const { year, volumePieces, weightKg } = v;
+
       const p = prices[year - 1];
 
       const revenueGross = CalculationEngine.buildRevenueGross(p, volumePieces);
@@ -123,6 +124,7 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
   // Aggregate P&L by summing across SKUs per line
   const pnl: PnlYear[] = Array.from({ length: years }, (_, i) => {
     const year = i + 1;
+
     const acc: PnlYear = {
       year,
       revenueGross: 0,
@@ -148,6 +150,7 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
       tax: 0,
       pat: 0,
     };
+
     for (const s of bySku) {
       const y = s.pnl[i];
       if (!y) continue;

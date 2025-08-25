@@ -1,4 +1,7 @@
 import React from "react";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
 
 interface SectionProps {
   title: string;
@@ -8,13 +11,13 @@ interface SectionProps {
 
 export function Section({ title, children, className }: SectionProps) {
   return (
-    <div
-      className={`bg-white rounded-xl border border-slate-200 p-4 shadow-sm ${
-        className || ""
-      }`}
-    >
-      <div className="text-base font-semibold text-slate-900 mb-3">{title}</div>
-      {children}
-    </div>
+    <Card className={className} variant="outlined">
+      <CardContent>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+          {title}
+        </Typography>
+        {children}
+      </CardContent>
+    </Card>
   );
 }

@@ -66,7 +66,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       skus: input.skus,
     };
 
-    console.log("updates", updates);
+    console.log("updates", updates.finance);
 
     await businessCaseService.update(id, updates);
 

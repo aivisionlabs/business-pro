@@ -1,4 +1,5 @@
 import React from "react";
+import TextField from "@mui/material/TextField";
 
 interface LabeledInputProps {
   label: string;
@@ -23,24 +24,21 @@ export function LabeledInput({
     const newValue =
       type === "number" ? Number(e.target.value) : e.target.value;
     onChange(newValue);
-
-    // Trigger autosave if provided
     if (onAutoSave) {
       onAutoSave();
     }
   };
 
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm text-slate-700">{label}</span>
-      <input
-        className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
-        value={typeof value === "number" ? String(value) : value}
-        onChange={handleChange}
-        type={type}
-        step={step}
-        placeholder={placeholder}
-      />
-    </label>
+    <TextField
+      fullWidth
+      label={label}
+      value={typeof value === "number" ? String(value) : value}
+      onChange={handleChange}
+      type={type}
+      slotProps={{ htmlInput: { step } }}
+      placeholder={placeholder}
+      size="small"
+    />
   );
 }

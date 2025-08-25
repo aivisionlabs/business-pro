@@ -213,13 +213,120 @@ export type WeightedAvgPricePerKgYear = {
 // Temporary alias so existing imports keep working while UI migrates
 export type Scenario = BusinessCase;
 
+// ==============================
+// Smart Quote Calculator Types
+// ==============================
 
+export type QuoteComponent = {
+  resin: number;
+  mb: number;
+  wastage: number;
+  packaging: number;
+  freight: number;
+  mouldAmortisation: number;
+  conversionCharge: number;
+  discount: number;
+};
+
+export type QuoteLineItem = {
+  rsPerPiece: number;
+  rsPerKg: number;
+};
+
+export type QuoteSkuItem = {
+  skuId: string;
+  skuName: string;
+  included: boolean; // Whether this SKU is included in the quote
+  quantity: number; // Quantity for this SKU
+
+  // Quote components for this SKU
+  components: {
+    resin: QuoteLineItem;
+    mb: QuoteLineItem;
+    wastage: QuoteLineItem;
+    packaging: QuoteLineItem;
+    freight: QuoteLineItem;
+    mouldAmortisation: QuoteLineItem;
+    conversionCharge: QuoteLineItem;
+    discount: QuoteLineItem;
+  };
+
+  // Totals for this SKU
+  totalExclGst: QuoteLineItem;
+  gst: QuoteLineItem;
+  totalInclGst: QuoteLineItem;
+};
+
+export type CustomerQuote = {
+  id: string;
+  businessCaseId: string;
+  quoteName: string;
+  createdAt: string;
+  updatedAt: string;
+
+  // Multiple SKUs in the quote
+  skuItems: QuoteSkuItem[];
+
+  // Aggregated totals across all included SKUs
+  aggregatedTotals: {
+    totalExclGst: QuoteLineItem;
+    gst: QuoteLineItem;
+    totalInclGst: QuoteLineItem;
+  };
+
+  // Tax rate (e.g., 0.18 for 18% GST)
+  gstRate: number;
+
+  // Optimization settings
+  optimizationMode: 'none' | 'conversion_only' | 'all_components';
+  targetNpv?: number;
+  targetIrr?: number;
+
+  // Flags for which components are editable in optimization
+  editableComponents: {
+    resin: boolean;
+    mb: boolean;
+    wastage: boolean;
+    packaging: boolean;
+    freight: boolean;
+    mouldAmortisation: boolean;
+    conversionCharge: boolean;
+    discount: boolean;
+  };
+};
+
+export type QuoteGenerationInput = {
+  businessCase: BusinessCase;
+  selectedSkuIds?: string[]; // Optional: specific SKUs to include, defaults to all
+  gstRate?: number; // defaults to 0.18 (18%)
+  quoteName?: string;
+  defaultQuantities?: Record<string, number>; // Default quantities per SKU
+};
+
+export type QuoteOptimizationInput = {
+  quote: CustomerQuote;
+  businessCase: BusinessCase; // Added business case for proper calculation
+  targetNpv?: number;
+  targetIrr?: number;
+  optimizationMode: 'conversion_only' | 'all_components';
+};
+
+export type QuoteOptimizationResult = {
+  optimizedQuote: CustomerQuote;
+  achievedNpv: number;
+  achievedIrr: number | null;
+  convergenceInfo: {
+    converged: boolean;
+    iterations: number;
+    finalError: number;
+  };
+};
 
 // ==============================
 // Simulation Types (Risk Engine)
 // ==============================
 
-export type OutcomeMetric = "NPV" | "IRR" | "PNL_Y1" | "PNL_Y5" | "PNL_TOTAL";
+export type OutcomeMetric = "NPV" | "IRR" | "PNL_Y1" | "PNL_TOTAL";
 
 export type ObjectiveConfig = {
   metrics: OutcomeMetric[];

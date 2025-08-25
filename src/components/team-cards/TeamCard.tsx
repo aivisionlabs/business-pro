@@ -1,3 +1,10 @@
+import { ExpandLess, ExpandMore } from "@mui/icons-material";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardHeader from "@mui/material/CardHeader";
+import Collapse from "@mui/material/Collapse";
+import IconButton from "@mui/material/IconButton";
+import LinearProgress from "@mui/material/LinearProgress";
 import { useState } from "react";
 
 // Team Card Component with Progress Bar
@@ -25,77 +32,51 @@ export function TeamCard({
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-      {/* Card Header with Progress Bar */}
-      <div className="p-4 border-b border-slate-200">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-slate-900">
-              {title}
-            </span>
-            <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-              {team}
+    <Card variant="outlined">
+      <CardHeader
+        onClick={() => {
+          if (isCollapsible) setIsCollapsed(!isCollapsed);
+        }}
+        sx={{ cursor: isCollapsible ? "pointer" : "default" }}
+        title={title}
+        action={
+          isCollapsible ? (
+            <IconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsCollapsed(!isCollapsed);
+              }}
+            >
+              {isCollapsed ? <ExpandMore /> : <ExpandLess />}
+            </IconButton>
+          ) : undefined
+        }
+      />
+
+      <Collapse in={!isCollapsed} timeout="auto" unmountOnExit>
+        <CardContent>{children}</CardContent>
+      </Collapse>
+
+      {team !== "Ops" && (
+        <div style={{ padding: "0 16px 8px" }}>
+          <LinearProgress
+            variant="determinate"
+            value={Math.max(0, Math.min(100, progress))}
+          />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: 6,
+            }}
+          >
+            <span style={{ fontSize: 12, color: "#667085" }}>Progress</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#344054" }}>
+              {filledFields}/{totalFields} fields
             </span>
           </div>
-          {isCollapsible && (
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="text-slate-500 hover:text-slate-700 transition-colors"
-            >
-              {isCollapsed ? (
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 15l7-7 7 7"
-                  />
-                </svg>
-              )}
-            </button>
-          )}
         </div>
-
-        {/* Progress Bar - Hidden for Operations team */}
-        {team !== "Ops" && (
-          <>
-            <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between items-center mt-1">
-              <span className="text-xs text-slate-600">Progress</span>
-              <span className="text-xs font-medium text-slate-700">
-                {filledFields}/{totalFields} fields
-              </span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Card Content */}
-      {!isCollapsed && <div className="p-4">{children}</div>}
-    </div>
+      )}
+    </Card>
   );
 }

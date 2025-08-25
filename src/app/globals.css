@@ -55,6 +55,13 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure proper spacing for sticky header */
+main {
+  padding-top: 0;
 }
 
 /* Focus styles for better accessibility */

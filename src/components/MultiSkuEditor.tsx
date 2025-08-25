@@ -1,19 +1,36 @@
 "use client";
 import { calculateScenario } from "@/lib/calc";
 import { CalculationEngine } from "@/lib/calc/engines";
-import { PlantMaster, BusinessCase as Scenario, Sku } from "@/lib/types";
+import {
+  FinanceInput,
+  PlantMaster,
+  BusinessCase as Scenario,
+  Sku,
+} from "@/lib/types";
 import { nanoid } from "nanoid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-// import CaseMetricsCharts from "@/components/CaseMetricsCharts";
-import { Section, LabeledInput } from "./common";
+
 import FreeCashFlow from "./FreeCashFlow";
 import PnlAggregated from "./PnlAggregated";
 import PnlPerKg from "./PnlPerKg";
 
 import { formatCrores, formatPct } from "@/lib/utils";
-import RiskScenarios from "./RiskScenarios";
-import RiskSensitivity from "./RiskSensitivity";
+import { ExpandLess, ExpandMore } from "@mui/icons-material";
+import AnalyticsIcon from "@mui/icons-material/Analytics";
+import CalculateIcon from "@mui/icons-material/Calculate";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardHeader from "@mui/material/CardHeader";
+import Chip from "@mui/material/Chip";
+import Collapse from "@mui/material/Collapse";
+import IconButton from "@mui/material/IconButton";
+import Tab from "@mui/material/Tab";
+import Tabs from "@mui/material/Tabs";
+import Typography from "@mui/material/Typography";
 import {
+  FinanceTeamCard,
   NpdTeamCard,
   OpsTeamCard,
   PricingTeamCard,
@@ -29,16 +46,27 @@ function useAutoSave(
   const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(
     null
   );
+  const scenarioRef = React.useRef(scenario);
+  const onSaveRef = React.useRef(onSave);
+
+  useEffect(() => {
+    scenarioRef.current = scenario;
+  }, [scenario]);
+
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
   const triggerAutoSave = useCallback(() => {
     if (autoSaveTimer) {
       clearTimeout(autoSaveTimer);
     }
     const timer = setTimeout(() => {
-      onSave(scenario);
+      onSaveRef.current(scenarioRef.current);
+      setAutoSaveTimer(null);
     }, delay);
     setAutoSaveTimer(timer);
-  }, [scenario, onSave, delay, autoSaveTimer]);
+  }, [delay, autoSaveTimer]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -55,7 +83,8 @@ function useAutoSave(
 // Progress calculation helper
 function calculateCardProgress(
   sku: Sku,
-  team: string
+  team: string,
+  scenario?: Scenario
 ): { percentage: number; filledFields: number; totalFields: number } {
   const fieldConfigs: Record<
     string,
@@ -139,6 +168,33 @@ function calculateCardProgress(
       { field: "costOfNewInfra", path: "ops.costOfNewInfra", mandatory: true },
       { field: "costOfOldInfra", path: "ops.costOfOldInfra", mandatory: true },
     ],
+    finance: [
+      {
+        field: "corporateTaxRatePct",
+        path: "finance.corporateTaxRatePct",
+        mandatory: true,
+      },
+      {
+        field: "debtPct",
+        path: "finance.debtPct",
+        mandatory: true,
+      },
+      {
+        field: "costOfDebtPct",
+        path: "finance.costOfDebtPct",
+        mandatory: true,
+      },
+      {
+        field: "costOfEquityPct",
+        path: "finance.costOfEquityPct",
+        mandatory: true,
+      },
+      {
+        field: "annualVolumeGrowthPct",
+        path: "finance.annualVolumeGrowthPct",
+        mandatory: false,
+      },
+    ],
   };
 
   const config = fieldConfigs[team as keyof typeof fieldConfigs];
@@ -148,7 +204,9 @@ function calculateCardProgress(
   let totalFields = 0;
 
   config.forEach(({ path, mandatory, prefilled }) => {
-    if (mandatory || prefilled) {
+    // For finance team, count all fields regardless of mandatory status
+    // For other teams, only count mandatory or prefilled fields
+    if (team === "finance" || mandatory || prefilled) {
       totalFields++;
       let value: any;
       if (path === "name") {
@@ -170,7 +228,9 @@ function calculateCardProgress(
         value = sku.plantMaster[key];
       } else if (path.startsWith("finance.")) {
         // For finance fields, we need to access scenario.finance
-        return; // Skip for now, will handle separately
+        if (!scenario) return;
+        const key = path.split(".")[1] as keyof typeof scenario.finance;
+        value = scenario.finance[key];
       }
 
       if (
@@ -200,6 +260,18 @@ export default function MultiSkuEditor({
   const [activeSkuId, setActiveSkuId] = useState<string>(
     initial.skus[0]?.id || ""
   );
+
+  // Ensure activeSkuId is always valid when scenario changes
+  useEffect(() => {
+    if (scenario.skus.length > 0) {
+      const currentSkuExists = scenario.skus.some(
+        (sku) => sku.id === activeSkuId
+      );
+      if (!currentSkuExists) {
+        setActiveSkuId(scenario.skus[0].id);
+      }
+    }
+  }, [scenario.skus, activeSkuId]);
   const [isSaving, setIsSaving] = useState(false);
 
   // State for collapsible P&L sections
@@ -207,10 +279,46 @@ export default function MultiSkuEditor({
   const [pnlAggregatedCollapsed, setPnlAggregatedCollapsed] = useState(false);
   const [freeCashFlowCollapsed, setFreeCashFlowCollapsed] = useState(false);
 
-  const { triggerAutoSave, autoSaveTimer } = useAutoSave(
-    scenario,
-    handleSaveWithScenario
+  const handleSaveWithScenario = useCallback(
+    async (scenarioToSave: Scenario) => {
+      setIsSaving(true);
+
+      try {
+        const response = await fetch(`/api/scenarios/${scenarioToSave.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(scenarioToSave),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error(
+            "handleSaveWithScenario - API response not OK:",
+            response.status,
+            errorData
+          );
+          throw new Error(
+            errorData.error || `Save failed with status: ${response.status}`
+          );
+        }
+
+        const result = await response.json();
+        console.log("handleSaveWithScenario - API response success:", result);
+
+        if (result.success) {
+        } else {
+          throw new Error("Save failed");
+        }
+      } catch (error) {
+        console.error("Save error:", error);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    []
   );
+
+  const { triggerAutoSave } = useAutoSave(scenario, handleSaveWithScenario);
 
   // P&L Aggregated State Variables
   const [pnlAggregated, setPnlAggregated] = useState<{
@@ -269,9 +377,9 @@ export default function MultiSkuEditor({
       const originalFinance = updatedScenario.finance;
       updatedScenario.finance = {
         includeCorpSGA: originalFinance.includeCorpSGA ?? true,
-        debtPct: originalFinance.debtPct ?? 0,
-        costOfDebtPct: originalFinance.costOfDebtPct ?? 0,
-        costOfEquityPct: originalFinance.costOfEquityPct ?? 0,
+        debtPct: originalFinance.debtPct ?? 1,
+        costOfDebtPct: originalFinance.costOfDebtPct ?? 0.085,
+        costOfEquityPct: originalFinance.costOfEquityPct ?? 0.18,
         corporateTaxRatePct: originalFinance.corporateTaxRatePct ?? 0.25, // Default to 25%
         waccPct: originalFinance.waccPct ?? 0.14, // Default to 14%
         annualVolumeGrowthPct: originalFinance.annualVolumeGrowthPct ?? 0,
@@ -288,22 +396,69 @@ export default function MultiSkuEditor({
       }
     }
 
+    console.log("updatedScenario", updatedScenario);
     setScenario(updatedScenario);
 
     // If defaults were applied, save to database
     if (needsSave) {
       setTimeout(() => {
         handleSaveWithScenario(updatedScenario);
-      }, 1000);
+      }, 2000);
     }
-  }, [initial]);
+  }, [initial, handleSaveWithScenario]);
 
   const calc = useMemo(() => calculateScenario(scenario), [scenario]);
+
+  // Key metrics for quick visibility and change deltas
+  const keyMetrics = useMemo(() => {
+    return {
+      revenueY1: calc.pnl[0]?.revenueNet ?? 0,
+      ebitdaY1: calc.pnl[0]?.ebitda ?? 0,
+      npv: calc.returns.npv,
+      irr: calc.returns.irr, // can be null
+    };
+  }, [calc]);
+
+  const [metricDeltas, setMetricDeltas] = useState<{
+    revenueY1: number;
+    ebitdaY1: number;
+    npv: number;
+    irr: number | null;
+  }>({
+    revenueY1: 0,
+    ebitdaY1: 0,
+    npv: 0,
+    irr: null,
+  });
+  const prevMetricsRef = React.useRef<typeof keyMetrics | null>(null);
+
+  useEffect(() => {
+    const prev = prevMetricsRef.current;
+    if (prev) {
+      setMetricDeltas({
+        revenueY1: keyMetrics.revenueY1 - prev.revenueY1,
+        ebitdaY1: keyMetrics.ebitdaY1 - prev.ebitdaY1,
+        npv: keyMetrics.npv - prev.npv,
+        irr:
+          keyMetrics.irr === null || prev.irr === null
+            ? null
+            : keyMetrics.irr - prev.irr,
+      });
+    }
+    prevMetricsRef.current = keyMetrics;
+  }, [keyMetrics]);
 
   function updateSku(updater: (s: Sku) => Sku) {
     setScenario((prev) => {
       const copy = { ...prev, skus: prev.skus.map((x) => ({ ...x })) };
       copy.skus[activeSkuIndex] = updater(copy.skus[activeSkuIndex]);
+      return copy;
+    });
+  }
+
+  function updateFinanceDetails(updater: (f: FinanceInput) => FinanceInput) {
+    setScenario((prev) => {
+      const copy = { ...prev, finance: updater(prev.finance) };
       return copy;
     });
   }
@@ -376,47 +531,6 @@ export default function MultiSkuEditor({
     }
   }
 
-  async function handleSaveWithScenario(scenarioToSave: Scenario) {
-    setIsSaving(true);
-
-    try {
-      const response = await fetch(`/api/scenarios/${scenarioToSave.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scenarioToSave),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error(
-          "handleSaveWithScenario - API response not OK:",
-          response.status,
-          errorData
-        );
-        throw new Error(
-          errorData.error || `Save failed with status: ${response.status}`
-        );
-      }
-
-      const result = await response.json();
-      console.log("handleSaveWithScenario - API response success:", result);
-
-      if (result.success) {
-      } else {
-        throw new Error("Save failed");
-      }
-    } catch (error) {
-      console.error("Save error:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function handleSave() {
-    // Call the new function with current scenario state
-    await handleSaveWithScenario(scenario);
-  }
-
   // Function to prevent scroll wheel from changing number input values
   const preventScrollOnNumberInputs = (e: WheelEvent) => {
     if (e.target instanceof HTMLInputElement && e.target.type === "number") {
@@ -435,454 +549,513 @@ export default function MultiSkuEditor({
     };
   }, []);
 
-  // State for Finance card collapse
-  const [isFinanceCollapsed, setIsFinanceCollapsed] = useState(false);
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-2xl font-bold text-slate-900">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Box display="flex" alignItems="center" justifyContent="space-between">
+        <Box>
+          <Typography variant="h5" fontWeight={700} color="text.primary">
             {scenario.name}
-          </div>
-          <div className="text-xs text-slate-500">Case ID: {scenario.id}</div>
-        </div>
-        <button
-          onClick={handleSave}
-          disabled={isSaving || !!autoSaveTimer}
-          className={`px-4 py-2 rounded-lg text-white shadow transition-colors ${
-            isSaving || autoSaveTimer
-              ? "bg-blue-400 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          {isSaving ? "Saving..." : autoSaveTimer ? "Auto-saving..." : "Save"}
-        </button>
-      </div>
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Case ID: {scenario.id}
+          </Typography>
+        </Box>
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+          <Button
+            href={`/cases/${scenario.id}/case-analysis`}
+            variant="contained"
+            startIcon={<AnalyticsIcon />}
+            sx={{
+              background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)",
+                boxShadow: "0 10px 15px -3px rgba(59, 130, 246, 0.4)",
+              },
+            }}
+          >
+            Case Analysis
+          </Button>
+          <Button
+            href={`/cases/${scenario.id}/quote-calculator`}
+            variant="contained"
+            startIcon={<CalculateIcon />}
+            sx={{
+              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              boxShadow: "0 4px 6px -1px rgba(16, 185, 129, 0.3)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                boxShadow: "0 10px 15px -3px rgba(16, 185, 129, 0.4)",
+              },
+            }}
+          >
+            Create Customer Quotation
+          </Button>
+        </Box>
+      </Box>
 
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-        {/* Left column - Team cards */}
-        <div className="xl:col-span-3 space-y-4">
-          {/* Finance Team Card - Fixed at top */}
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-            <div className="p-4 border-b border-slate-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Finance
-                </h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                    Finance
-                  </span>
-                  <button
-                    onClick={() => setIsFinanceCollapsed(!isFinanceCollapsed)}
-                    className="text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    {isFinanceCollapsed ? (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 15l7-7 7 7"
-                        />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-            {!isFinanceCollapsed && (
-              <div className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <LabeledInput
-                    label="Tax Rate (%)"
-                    type="number"
-                    step={0.01}
-                    value={(scenario.finance.corporateTaxRatePct || 0.25) * 100}
-                    onChange={(v) =>
-                      setScenario((s) => ({
-                        ...s,
-                        finance: {
-                          ...s.finance,
-                          corporateTaxRatePct: Number(v) / 100,
-                        },
-                      }))
-                    }
-                    onAutoSave={triggerAutoSave}
-                  />
-                  <LabeledInput
-                    label="Debt Percentage (%)"
-                    type="number"
-                    step={0.01}
-                    value={(scenario.finance.debtPct || 1) * 100}
-                    onChange={(v) =>
-                      setScenario((s) => ({
-                        ...s,
-                        finance: { ...s.finance, debtPct: Number(v) / 100 },
-                      }))
-                    }
-                    onAutoSave={triggerAutoSave}
-                  />
-                  <LabeledInput
-                    label="Cost of Debt (%)"
-                    type="number"
-                    step={0.01}
-                    value={(scenario.finance.costOfDebtPct || 0.087) * 100}
-                    onChange={(v) =>
-                      setScenario((s) => ({
-                        ...s,
-                        finance: {
-                          ...s.finance,
-                          costOfDebtPct: Number(v) / 100,
-                        },
-                      }))
-                    }
-                    onAutoSave={triggerAutoSave}
-                  />
-                  <LabeledInput
-                    label="Cost of Equity (%)"
-                    type="number"
-                    step={0.01}
-                    value={(scenario.finance.costOfEquityPct || 0.18) * 100}
-                    onChange={(v) =>
-                      setScenario((s) => ({
-                        ...s,
-                        finance: {
-                          ...s.finance,
-                          costOfEquityPct: Number(v) / 100,
-                        },
-                      }))
-                    }
-                    onAutoSave={triggerAutoSave}
-                  />
-                  <LabeledInput
-                    label="Annual Volume Growth (%)"
-                    type="number"
-                    step={0.01}
-                    value={(scenario.finance.annualVolumeGrowthPct || 0) * 100}
-                    onChange={(v) =>
-                      setScenario((s) => ({
-                        ...s,
-                        finance: {
-                          ...s.finance,
-                          annualVolumeGrowthPct: Number(v) / 100,
-                        },
-                      }))
-                    }
-                    onAutoSave={triggerAutoSave}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* SKU Tabs */}
-          <Section title="SKUs">
-            <div className="flex flex-wrap gap-2 items-center">
-              {scenario.skus.map((s) => (
-                <button
-                  key={`${s.id}-${s.name}`}
-                  onClick={() => setActiveSkuId(s.id)}
-                  className={`px-3 py-1.5 rounded-md border text-sm ${
-                    s.id === activeSkuId
-                      ? "border-blue-600 text-blue-700 bg-blue-50"
-                      : "border-slate-300 text-slate-700 bg-white"
-                  }`}
-                >
-                  {s.name}
-                </button>
-              ))}
-              <button
-                onClick={addSku}
-                className="px-3 py-1.5 rounded-md border border-dashed border-slate-400 text-slate-700"
+      {/* Global sticky metrics bar for immediate feedback */}
+      <Card
+        variant="outlined"
+        sx={(theme) => ({
+          position: "sticky",
+          top: theme.spacing(10),
+          zIndex: theme.zIndex.appBar - 1,
+        })}
+      >
+        <CardContent>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr 1fr", sm: "1fr 1fr 1fr 1fr" },
+              gap: 2,
+            }}
+          >
+            <Box textAlign="center">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                mb={0.5}
               >
-                + Add SKU
-              </button>
-              <button
-                onClick={deleteActiveSku}
-                className="px-3 py-1.5 rounded-md border border-red-300 text-red-700 bg-red-50 ml-auto"
-              >
-                Delete Active SKU
-              </button>
-            </div>
-          </Section>
-
-          {/* Team-Based Cards */}
-          <div className="space-y-4">
-            {/* Sales Team Card */}
-            <SalesTeamCard
-              sku={sku}
-              updateSku={updateSku}
-              triggerAutoSave={triggerAutoSave}
-              progress={calculateCardProgress(sku, "sales").percentage}
-              filledFields={calculateCardProgress(sku, "sales").filledFields}
-              totalFields={calculateCardProgress(sku, "sales").totalFields}
-            />
-
-            {/* Pricing Team Card */}
-            <PricingTeamCard
-              sku={sku}
-              updateSku={updateSku}
-              triggerAutoSave={triggerAutoSave}
-              progress={calculateCardProgress(sku, "pricing").percentage}
-              filledFields={calculateCardProgress(sku, "pricing").filledFields}
-              totalFields={calculateCardProgress(sku, "pricing").totalFields}
-            />
-
-            {/* NPD Team Card */}
-            <NpdTeamCard
-              sku={sku}
-              plantOptions={plantOptions}
-              updateSku={updateSku}
-              triggerAutoSave={triggerAutoSave}
-              progress={calculateCardProgress(sku, "npd").percentage}
-              filledFields={calculateCardProgress(sku, "npd").filledFields}
-              totalFields={calculateCardProgress(sku, "npd").totalFields}
-            />
-
-            {/* Ops Team Card */}
-            <OpsTeamCard
-              sku={sku}
-              updateSku={updateSku}
-              triggerAutoSave={triggerAutoSave}
-              progress={calculateCardProgress(sku, "ops").percentage}
-              filledFields={calculateCardProgress(sku, "ops").filledFields}
-              totalFields={calculateCardProgress(sku, "ops").totalFields}
-            />
-          </div>
-        </div>
-
-        {/* Right column - Aggregated metrics with independent scroll */}
-        <div className="xl:col-span-2 flex flex-col h-[calc(100vh-100px)]">
-          {/* Sticky Key Metrics - Always visible at top */}
-          <div className="flex-shrink-0 mb-4">
-            <div className="sticky top-4 z-10 bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
-              <Section title="Key Aggregated Metrics">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
-                    <div className="text-xs text-slate-600 mb-1">
-                      Revenue (Y1)
-                    </div>
-                    <div className="text-lg font-semibold text-slate-900">
-                      {formatCrores(calc.pnl[0]?.revenueNet || 0)}
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
-                    <div className="text-xs text-slate-600 mb-1">
-                      EBITDA (Y1)
-                    </div>
-                    <div className="text-lg font-semibold text-slate-900">
-                      {formatCrores(calc.pnl[0]?.ebitda || 0)}
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
-                    <div className="text-xs text-slate-600 mb-1">NPV</div>
-                    <div className="text-lg font-semibold text-slate-900">
-                      {formatCrores(calc.returns.npv)}
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
-                    <div className="text-xs text-slate-600 mb-1">IRR</div>
-                    <div className="text-lg font-semibold text-slate-900">
-                      {calc.returns.irr === null
-                        ? "—"
-                        : formatPct(calc.returns.irr)}
-                    </div>
-                  </div>
-                </div>
-              </Section>
-            </div>
-          </div>
-
-          {/* Scrollable container for all P&L and Cashflow tables */}
-          <div className="flex-1 overflow-y-auto space-y-4 pr-2 pb-6 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-            {/* P&L per kg - Collapsible */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-              <div className="p-4 border-b border-slate-200">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    P&L per kg (Y1..Y5)
-                  </h3>
-                  <button
-                    onClick={() => setPnlPerKgCollapsed(!pnlPerKgCollapsed)}
-                    className="text-slate-500 hover:text-slate-700 transition-colors"
-                  >
-                    {pnlPerKgCollapsed ? (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 15l7-7 7 7"
-                        />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-              {!pnlPerKgCollapsed && (
-                <div className="p-4">
-                  <PnlPerKg calc={calc} pnlAggregated={pnlAggregated} />
-                </div>
+                Revenue (Y1)
+              </Typography>
+              <Typography variant="subtitle1" fontWeight={700}>
+                {formatCrores(keyMetrics.revenueY1)}
+              </Typography>
+              {metricDeltas.revenueY1 !== 0 && (
+                <Chip
+                  size="small"
+                  label={`${
+                    metricDeltas.revenueY1 > 0 ? "+" : ""
+                  }${formatCrores(Math.abs(metricDeltas.revenueY1))}`}
+                  color={metricDeltas.revenueY1 > 0 ? "success" : "error"}
+                  variant="outlined"
+                  sx={{ mt: 0.5 }}
+                />
               )}
-            </div>
+            </Box>
+            <Box textAlign="center">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                mb={0.5}
+              >
+                EBITDA (Y1)
+              </Typography>
+              <Typography variant="subtitle1" fontWeight={700}>
+                {formatCrores(keyMetrics.ebitdaY1)}
+              </Typography>
+              {metricDeltas.ebitdaY1 !== 0 && (
+                <Chip
+                  size="small"
+                  label={`${metricDeltas.ebitdaY1 > 0 ? "+" : ""}${formatCrores(
+                    Math.abs(metricDeltas.ebitdaY1)
+                  )}`}
+                  color={metricDeltas.ebitdaY1 > 0 ? "success" : "error"}
+                  variant="outlined"
+                  sx={{ mt: 0.5 }}
+                />
+              )}
+            </Box>
+            <Box textAlign="center">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                mb={0.5}
+              >
+                NPV
+              </Typography>
+              <Typography variant="subtitle1" fontWeight={700}>
+                {formatCrores(keyMetrics.npv)}
+              </Typography>
+              {metricDeltas.npv !== 0 && (
+                <Chip
+                  size="small"
+                  label={`${metricDeltas.npv > 0 ? "+" : ""}${formatCrores(
+                    Math.abs(metricDeltas.npv)
+                  )}`}
+                  color={metricDeltas.npv > 0 ? "success" : "error"}
+                  variant="outlined"
+                  sx={{ mt: 0.5 }}
+                />
+              )}
+            </Box>
+            <Box textAlign="center">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                mb={0.5}
+              >
+                IRR
+              </Typography>
+              <Typography variant="subtitle1" fontWeight={700}>
+                {keyMetrics.irr === null ? "—" : formatPct(keyMetrics.irr)}
+              </Typography>
+              {metricDeltas.irr !== null && metricDeltas.irr !== 0 && (
+                <Chip
+                  size="small"
+                  label={`${metricDeltas.irr > 0 ? "+" : ""}${formatPct(
+                    Math.abs(metricDeltas.irr)
+                  )}`}
+                  color={metricDeltas.irr > 0 ? "success" : "error"}
+                  variant="outlined"
+                  sx={{ mt: 0.5 }}
+                />
+              )}
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", md: "1fr", lg: "6fr 6fr" },
+          alignItems: "start",
+          minHeight: 0, // Allow grid to shrink
+          width: "100%", // Ensure full width
+          overflow: "hidden", // Prevent any overflow
+        }}
+      >
+        {/* Left column - Team cards */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {/* Finance Team Card */}
+          <FinanceTeamCard
+            scenario={scenario}
+            updateFinanceDetails={updateFinanceDetails}
+            triggerAutoSave={triggerAutoSave}
+            progress={
+              calculateCardProgress(sku, "finance", scenario).percentage
+            }
+            filledFields={
+              calculateCardProgress(sku, "finance", scenario).filledFields
+            }
+            totalFields={
+              calculateCardProgress(sku, "finance", scenario).totalFields
+            }
+          />
+
+          {/* Modern SKU Management Section */}
+          <Card
+            variant="outlined"
+            sx={{
+              background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+              border: "1px solid #e2e8f0",
+              borderRadius: 3,
+              boxShadow:
+                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+            }}
+          >
+            <CardHeader
+              title={
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Typography
+                    variant="h6"
+                    fontWeight={700}
+                    color="text.primary"
+                  >
+                    SKU Management
+                  </Typography>
+                  <Chip
+                    label={`${scenario.skus.length} SKU${
+                      scenario.skus.length !== 1 ? "s" : ""
+                    }`}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                </Box>
+              }
+              action={
+                <Box display="flex" gap={1}>
+                  <Button
+                    variant="contained"
+                    onClick={addSku}
+                    startIcon={<span style={{ fontSize: "18px" }}>+</span>}
+                    sx={{
+                      background:
+                        "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 600,
+                      boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)",
+                      "&:hover": {
+                        background:
+                          "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)",
+                        boxShadow: "0 10px 15px -3px rgba(59, 130, 246, 0.4)",
+                      },
+                    }}
+                  >
+                    Add SKU
+                  </Button>
+                  <Button
+                    color="error"
+                    variant="outlined"
+                    onClick={deleteActiveSku}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 600,
+                      borderColor: "#ef4444",
+                      color: "#ef4444",
+                      "&:hover": {
+                        borderColor: "#dc2626",
+                        backgroundColor: "rgba(239, 68, 68, 0.04)",
+                      },
+                    }}
+                  >
+                    Delete SKU
+                  </Button>
+                </Box>
+              }
+              sx={{
+                pb: 1,
+                "& .MuiCardHeader-action": { alignSelf: "center" },
+              }}
+            />
+
+            <CardContent sx={{ pt: 0 }}>
+              {/* SKU Navigation Tabs */}
+              <Box sx={{ mb: 3 }}>
+                <Tabs
+                  value={activeSkuIndex}
+                  onChange={(_, idx) => setActiveSkuId(scenario.skus[idx].id)}
+                  variant="scrollable"
+                  scrollButtons
+                  allowScrollButtonsMobile
+                  sx={{
+                    "& .MuiTabs-indicator": {
+                      height: 3,
+                      borderRadius: 1.5,
+                      background:
+                        "linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%)",
+                    },
+                    "& .MuiTab-root": {
+                      minHeight: 40,
+                      padding: "4px 12px",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      fontSize: "1rem",
+                      "&.Mui-selected": {
+                        color: "#1d4ed8",
+                        fontWeight: 600,
+                      },
+                    },
+                  }}
+                >
+                  {scenario.skus.map((s, idx) => (
+                    <Tab key={`${s.id}-${s.name}`} label={s.name} value={idx} />
+                  ))}
+                </Tabs>
+              </Box>
+
+              {/* Active SKU Indicator */}
+              {sku && (
+                <Box sx={{ mb: 2, p: 1.5, borderRadius: 1 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                  >
+                    Active: <strong>{sku.name}</strong>
+                  </Typography>
+
+                  {/* Team Input Cards */}
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
+                  >
+                    <SalesTeamCard
+                      sku={sku}
+                      updateSku={updateSku}
+                      triggerAutoSave={triggerAutoSave}
+                      progress={calculateCardProgress(sku, "sales").percentage}
+                      filledFields={
+                        calculateCardProgress(sku, "sales").filledFields
+                      }
+                      totalFields={
+                        calculateCardProgress(sku, "sales").totalFields
+                      }
+                    />
+
+                    <PricingTeamCard
+                      sku={sku}
+                      updateSku={updateSku}
+                      triggerAutoSave={triggerAutoSave}
+                      progress={
+                        calculateCardProgress(sku, "pricing").percentage
+                      }
+                      filledFields={
+                        calculateCardProgress(sku, "pricing").filledFields
+                      }
+                      totalFields={
+                        calculateCardProgress(sku, "pricing").totalFields
+                      }
+                    />
+
+                    <NpdTeamCard
+                      sku={sku}
+                      plantOptions={plantOptions}
+                      updateSku={updateSku}
+                      triggerAutoSave={triggerAutoSave}
+                      progress={calculateCardProgress(sku, "npd").percentage}
+                      filledFields={
+                        calculateCardProgress(sku, "npd").filledFields
+                      }
+                      totalFields={
+                        calculateCardProgress(sku, "npd").totalFields
+                      }
+                    />
+
+                    <OpsTeamCard
+                      sku={sku}
+                      updateSku={updateSku}
+                      triggerAutoSave={triggerAutoSave}
+                      progress={calculateCardProgress(sku, "ops").percentage}
+                      filledFields={
+                        calculateCardProgress(sku, "ops").filledFields
+                      }
+                      totalFields={
+                        calculateCardProgress(sku, "ops").totalFields
+                      }
+                    />
+                  </Box>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* Right column - P&L and Cashflow tables in scroll */}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            height: "calc(100vh - 100px)",
+            minWidth: 0, // Allow flex item to shrink below content size
+            flexShrink: 0, // Prevent shrinking
+            maxWidth: "100%", // Ensure it doesn't exceed container width
+            overflow: "hidden", // Prevent any overflow
+          }}
+        >
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: "auto",
+              overflowX: "hidden", // Prevent horizontal scroll
+              display: "flex",
+              flexDirection: "column",
+              gap: 3, // Increased gap for better spacing
+              pr: 1,
+              pb: 3,
+              minHeight: 0, // Allow flex item to shrink
+            }}
+          >
+            {/* P&L per kg - Collapsible */}
+            <Card variant="outlined" sx={{ flexShrink: 0 }}>
+              <CardHeader
+                title={
+                  <Typography variant="h6">P&L per kg (Y1..Y5)</Typography>
+                }
+                action={
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPnlPerKgCollapsed(!pnlPerKgCollapsed);
+                    }}
+                  >
+                    {pnlPerKgCollapsed ? <ExpandMore /> : <ExpandLess />}
+                  </IconButton>
+                }
+                onClick={() => setPnlPerKgCollapsed(!pnlPerKgCollapsed)}
+                sx={{ cursor: "pointer" }}
+              />
+              <Collapse in={!pnlPerKgCollapsed} timeout="auto" unmountOnExit>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+                  <PnlPerKg calc={calc} pnlAggregated={pnlAggregated} />
+                </CardContent>
+              </Collapse>
+            </Card>
 
             {/* P&L Aggregated - Collapsible */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-              <div className="p-4 border-b border-slate-200">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    P&L (Aggregated) (in Crore)
-                  </h3>
-                  <button
-                    onClick={() =>
-                      setPnlAggregatedCollapsed(!pnlAggregatedCollapsed)
-                    }
-                    className="text-slate-500 hover:text-slate-700 transition-colors"
+            <Card variant="outlined" sx={{ flexShrink: 0 }}>
+              <CardHeader
+                title={
+                  <Typography variant="h6">P&L Aggregated (Cr)</Typography>
+                }
+                action={
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPnlAggregatedCollapsed(!pnlAggregatedCollapsed);
+                    }}
                   >
-                    {pnlAggregatedCollapsed ? (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 15l7-7 7 7"
-                        />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-              {!pnlAggregatedCollapsed && (
-                <div className="p-4">
+                    {pnlAggregatedCollapsed ? <ExpandMore /> : <ExpandLess />}
+                  </IconButton>
+                }
+                onClick={() =>
+                  setPnlAggregatedCollapsed(!pnlAggregatedCollapsed)
+                }
+                sx={{ cursor: "pointer" }}
+              />
+              <Collapse
+                in={!pnlAggregatedCollapsed}
+                timeout="auto"
+                unmountOnExit
+              >
+                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
                   <PnlAggregated pnlAggregated={pnlAggregated} />
-                </div>
-              )}
-            </div>
+                </CardContent>
+              </Collapse>
+            </Card>
 
             {/* Free Cash Flow - Collapsible */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-              <div className="p-4 border-b border-slate-200">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    Free Cash Flow Analysis
-                  </h3>
-                  <button
-                    onClick={() =>
-                      setFreeCashFlowCollapsed(!freeCashFlowCollapsed)
-                    }
-                    className="text-slate-500 hover:text-slate-700 transition-colors"
+            <Card variant="outlined" sx={{ flexShrink: 0 }}>
+              <CardHeader
+                title={
+                  <Typography variant="h6">Free Cash Flow Analysis</Typography>
+                }
+                action={
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFreeCashFlowCollapsed(!freeCashFlowCollapsed);
+                    }}
                   >
-                    {freeCashFlowCollapsed ? (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 15l7-7 7 7"
-                        />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-              {!freeCashFlowCollapsed && (
-                <div className="p-4">
+                    {freeCashFlowCollapsed ? <ExpandMore /> : <ExpandLess />}
+                  </IconButton>
+                }
+                onClick={() => setFreeCashFlowCollapsed(!freeCashFlowCollapsed)}
+                sx={{ cursor: "pointer" }}
+              />
+              <Collapse
+                in={!freeCashFlowCollapsed}
+                timeout="auto"
+                unmountOnExit
+              >
+                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
                   <FreeCashFlow cashflow={calc.cashflow} pnl={calc.pnl} />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Risk Analysis - Full Page Width */}
-      <div className="mt-8 space-y-6">
-        <RiskSensitivity scenario={scenario} />
-        <RiskScenarios scenario={scenario} />
-      </div>
+                </CardContent>
+              </Collapse>
+            </Card>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Case Metrics Charts - COMMENTED OUT */}
       {/* <Section title="📈 Case Performance Charts" className="mt-6">
         <CaseMetricsCharts calcOutput={calc} />
       </Section> */}
-    </div>
+    </Box>
   );
 }

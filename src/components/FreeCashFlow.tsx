@@ -1,6 +1,15 @@
+import React from "react";
 import { formatCrores } from "@/lib/utils";
-import { ChevronRight, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
 
 interface FreeCashFlowProps {
   cashflow: {
@@ -23,9 +32,6 @@ interface FreeCashFlowProps {
 }
 
 export default function FreeCashFlow({ cashflow, pnl }: FreeCashFlowProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  const toggleExpanded = () => setIsExpanded(!isExpanded);
   // Calculate the components for each year
   const getFcfBreakdown = (year: number) => {
     const yearData = cashflow.find((c) => c.year === year);
@@ -52,122 +58,194 @@ export default function FreeCashFlow({ cashflow, pnl }: FreeCashFlowProps) {
   };
 
   return (
-    <div>
-      <button
-        onClick={toggleExpanded}
-        className="flex items-center justify-between w-full text-left text-base font-semibold text-slate-900 mb-3 hover:bg-slate-50 p-2 rounded-lg transition-colors"
-      >
-        {isExpanded ? (
-          <>
-            Close <ChevronUp className="h-5 w-5 text-slate-500" />
-          </>
-        ) : (
-          <>
-            View Cashflow analysis{" "}
-            <ChevronRight className="h-5 w-5 text-slate-500" />
-          </>
-        )}
-      </button>
-      {isExpanded && (
-        <div className="space-y-4">
-          {/* Summary Table */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm text-slate-800">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left p-2">Year</th>
-                  <th className="text-right p-2">EBITDA</th>
-                  <th className="text-right p-2">Interest</th>
-                  <th className="text-right p-2">Tax</th>
-                  <th className="text-right p-2">Δ Working Capital</th>
-                  <th className="text-right p-2">Free Cash Flow</th>
-                  <th className="text-right p-2">Cumulative FCF</th>
-                </tr>
-              </thead>
-              <tbody>
+    <Card variant="outlined">
+      <CardContent>
+        <Box sx={{ overflowX: "auto", width: "100%" }}>
+          <TableContainer
+            sx={{
+              minWidth: { xs: 400, sm: 500, md: 600, lg: 700 },
+              maxWidth: "100%",
+            }}
+          >
+            <Table size="small" sx={{ "td, th": { py: 1.25 } }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell
+                    sx={{
+                      minWidth: { xs: 50, sm: 60, md: 80 },
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    Year
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    sx={{
+                      minWidth: { xs: 70, sm: 80, md: 100 },
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    EBITDA
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    sx={{
+                      minWidth: { xs: 70, sm: 80, md: 100 },
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    Interest
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    sx={{
+                      minWidth: { xs: 70, sm: 80, md: 100 },
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    Tax
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    sx={{
+                      minWidth: { xs: 100, sm: 120, md: 140 },
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    Δ Working Capital
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    sx={{
+                      minWidth: { xs: 80, sm: 100, md: 120 },
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    Free Cash Flow
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    sx={{
+                      minWidth: { xs: 100, sm: 120, md: 140 },
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    Cumulative FCF
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {cashflow.map((yearData) => {
                   const breakdown = getFcfBreakdown(yearData.year);
                   if (!breakdown) return null;
-
+                  const wcPositive = breakdown.changeInNwc > 0;
+                  const fcfPositive = breakdown.fcf >= 0;
+                  const cumPositive = yearData.cumulativeFcf >= 0;
                   return (
-                    <tr
-                      key={yearData.year}
-                      className="border-b border-slate-100"
-                    >
-                      <td className="p-2 text-slate-700 font-medium">
+                    <TableRow key={yearData.year} hover>
+                      <TableCell
+                        sx={{ color: "text.secondary", fontWeight: 600 }}
+                      >
                         {yearData.year === 0 ? "Initial" : `Y${yearData.year}`}
-                      </td>
-                      <td className="p-2 text-right font-mono">
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          fontFamily:
+                            "ui-monospace, SFMono-Regular, Menlo, monospace",
+                          lineHeight: 1.6,
+                        }}
+                      >
                         {formatCrores(breakdown.ebitda)}
-                      </td>
-                      <td className="p-2 text-right font-mono">
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          fontFamily:
+                            "ui-monospace, SFMono-Regular, Menlo, monospace",
+                          lineHeight: 1.6,
+                        }}
+                      >
                         {formatCrores(breakdown.interest)}
-                      </td>
-                      <td className="p-2 text-right font-mono">
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          fontFamily:
+                            "ui-monospace, SFMono-Regular, Menlo, monospace",
+                          lineHeight: 1.6,
+                        }}
+                      >
                         {formatCrores(breakdown.tax)}
-                      </td>
-                      <td className="p-2 text-right font-mono">
-                        <span
-                          className={
-                            breakdown.changeInNwc > 0
-                              ? "text-red-600"
-                              : "text-green-600"
-                          }
-                        >
-                          {formatCrores(breakdown.changeInNwc)}
-                        </span>
-                      </td>
-                      <td className="p-2 text-right font-mono font-semibold">
-                        <span
-                          className={
-                            breakdown.fcf >= 0
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }
-                        >
-                          {formatCrores(breakdown.fcf)}
-                        </span>
-                      </td>
-                      <td className="p-2 text-right font-mono">
-                        <span
-                          className={
-                            yearData.cumulativeFcf >= 0
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }
-                        >
-                          {formatCrores(yearData.cumulativeFcf)}
-                        </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          color: wcPositive ? "error.main" : "success.main",
+                          fontFamily:
+                            "ui-monospace, SFMono-Regular, Menlo, monospace",
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {formatCrores(breakdown.changeInNwc)}
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          color: fcfPositive ? "success.main" : "error.main",
+                          fontWeight: 700,
+                          fontFamily:
+                            "ui-monospace, SFMono-Regular, Menlo, monospace",
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {formatCrores(breakdown.fcf)}
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          color: cumPositive ? "success.main" : "error.main",
+                          fontFamily:
+                            "ui-monospace, SFMono-Regular, Menlo, monospace",
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {formatCrores(yearData.cumulativeFcf)}
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
 
-          {/* Formula Explanation */}
-          <div className="bg-slate-50 rounded-lg p-4">
-            <h4 className="font-medium text-slate-900 mb-2">
+        <Card sx={{ mt: 2 }} variant="outlined">
+          <CardContent>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
               Free Cash Flow Formula
-            </h4>
-            <div className="text-sm text-slate-700 space-y-1">
-              <p>
-                <strong>
-                  FCF = EBITDA - Interest - Tax - Δ Working Capital
-                </strong>
-              </p>
-              <p className="text-xs text-slate-600">
-                Where Δ Working Capital = Current Year NWC - Previous Year NWC
-              </p>
-              <p className="text-xs text-slate-600">
-                Note: All values (EBITDA, Interest, Tax) are calculated from
-                aggregated P&L across all SKUs
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+            </Typography>
+            <Typography variant="body2" gutterBottom>
+              <strong>FCF = EBITDA - Interest - Tax - Δ Working Capital</strong>
+            </Typography>
+            <Typography
+              variant="caption"
+              display="block"
+              color="text.secondary"
+            >
+              Where Δ Working Capital = Current Year NWC - Previous Year NWC
+            </Typography>
+            <Typography
+              variant="caption"
+              display="block"
+              color="text.secondary"
+            >
+              Note: All values (EBITDA, Interest, Tax) are calculated from
+              aggregated P&L across all SKUs
+            </Typography>
+          </CardContent>
+        </Card>
+      </CardContent>
+    </Card>
   );
 }

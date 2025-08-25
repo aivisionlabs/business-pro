@@ -440,21 +440,13 @@ export class CalculationEngine {
  * Calculate WACC
  */
   static buildWacc(finance: any, taxRate: number): number {
-    console.log('=== CalculationEngine.buildWacc ===');
-    console.log('Finance inputs:', JSON.stringify(finance, null, 2));
-    console.log('Tax rate:', taxRate);
-
     // If WACC is explicitly provided, use it
     if (finance?.waccPct !== undefined && finance.waccPct !== null) {
-      console.log('Using provided WACC:', finance.waccPct);
-      console.log('========================================');
       return finance.waccPct;
     }
 
     // Default WACC to 14% if finance inputs are missing
     if (!finance || (!finance.debtPct && !finance.costOfDebtPct && !finance.costOfEquityPct)) {
-      console.log('Using default WACC: 14%');
-      console.log('========================================');
       return 0.14; // 14% default WACC
     }
 
@@ -462,8 +454,6 @@ export class CalculationEngine {
     const wacc = (finance.debtPct || 0) * (finance.costOfDebtPct || 0) * (1 - taxRate) +
       equityPct * (finance.costOfEquityPct || 0);
 
-    console.log('Calculated WACC:', wacc);
-    console.log('========================================');
     return wacc;
   }
 
@@ -472,7 +462,7 @@ export class CalculationEngine {
    */
   static buildPresentValue(fcf: number, wacc: number, year: number): number {
     const pv = fcf / Math.pow(1 + wacc, year);
-    console.log(`  buildPresentValue: ${fcf} / (1 + ${wacc})^${year} = ${fcf} / ${Math.pow(1 + wacc, year).toFixed(4)} = ${pv.toFixed(6)}`);
+    // console.log(`  buildPresentValue: ${fcf} / (1 + ${wacc})^${year} = ${fcf} / ${Math.pow(1 + wacc, year).toFixed(4)} = ${pv.toFixed(6)}`);
     return pv;
   }
 
@@ -486,12 +476,10 @@ export class CalculationEngine {
       const t = cashflows[i].year;
       const fcf = cashflows[i].fcf;
       const pv = this.buildPresentValue(fcf, wacc, t);
-      console.log(`Year ${t}: FCF=${fcf}, PV=${pv.toFixed(2)}`);
+      // console.log(`Year ${t}: FCF=${fcf}, PV=${pv.toFixed(2)}`);
       npv += pv;
     }
 
-    console.log('Final NPV:', npv);
-    console.log('========================================');
     return npv;
   }
 

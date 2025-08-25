@@ -42,7 +42,7 @@ export default function CasesPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="mx-auto max-w-4xl px-4 py-10">
+        <div className="mx-auto max-w-4xl px-4 py-10 pt-16">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
             <p className="mt-4 text-slate-600">Loading cases...</p>
@@ -55,7 +55,7 @@ export default function CasesPage() {
   if (error) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="mx-auto max-w-4xl px-4 py-10">
+        <div className="mx-auto max-w-4xl px-4 py-10 pt-16">
           <div className="text-center">
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
               <strong>Error:</strong> {error}
@@ -68,7 +68,7 @@ export default function CasesPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="mx-auto max-w-4xl px-4 py-10">
+      <div className="mx-auto max-w-4xl px-4 py-10 pt-16">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900">Business Cases</h1>
           <p className="text-slate-600">
