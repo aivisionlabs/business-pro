@@ -177,7 +177,7 @@ const ScenarioRadarChart = ({
                     {metric === "IRR"
                       ? `${(baseline * 100).toFixed(1)}%`
                       : metric.includes("NPV") || metric.includes("PNL")
-                      ? `${(baseline / 1000000).toFixed(1)}M`
+                      ? `${(baseline / 10000000).toFixed(1)}Cr`
                       : baseline.toFixed(0)}
                   </Box>
                 </Box>
@@ -203,7 +203,7 @@ const ScenarioRadarChart = ({
                 {metric === "IRR"
                   ? `${(baseline * 100).toFixed(1)}%`
                   : metric.includes("NPV") || metric.includes("PNL")
-                  ? `₹${(baseline / 1000000).toFixed(1)}M`
+                  ? `₹${(baseline / 10000000).toFixed(1)}Cr`
                   : baseline.toFixed(0)}
               </Typography>
 
@@ -214,9 +214,9 @@ const ScenarioRadarChart = ({
               >
                 Range:{" "}
                 {metric.includes("NPV") || metric.includes("PNL")
-                  ? `₹${(minVal / 1000000).toFixed(1)}M - ₹${(
-                      maxVal / 1000000
-                    ).toFixed(1)}M`
+                  ? `₹${(minVal / 10000000).toFixed(1)}Cr - ₹${(
+                      maxVal / 10000000
+                    ).toFixed(1)}Cr`
                   : `${minVal.toFixed(1)} - ${maxVal.toFixed(1)}`}
               </Typography>
             </Paper>
@@ -350,7 +350,7 @@ const ScenarioComparisonBars = ({
                         ? `${(value * 100).toFixed(1)}%`
                         : selectedMetric.includes("NPV") ||
                           selectedMetric.includes("PNL")
-                        ? `₹${(value / 1000000).toFixed(1)}M`
+                        ? `₹${(value / 10000000).toFixed(1)}Cr`
                         : value.toFixed(0)
                       : "N/A"
                   }
@@ -389,6 +389,7 @@ const ScenarioComparisonBars = ({
                     borderRadius: 2,
                     transition: "width 0.8s ease, box-shadow 0.3s ease",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    zIndex: 1,
                     "&:hover": {
                       boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
                     },
@@ -400,7 +401,10 @@ const ScenarioComparisonBars = ({
                   <Box
                     sx={{
                       position: "absolute",
-                      left: `${Math.min(percentage - 5, 90)}%`,
+                      left:
+                        percentage < 10
+                          ? "15%"
+                          : `${Math.max(5, Math.min(percentage - 5, 85))}%`,
                       top: "50%",
                       transform: "translateY(-50%)",
                       px: 1.5,
@@ -411,9 +415,10 @@ const ScenarioComparisonBars = ({
                       fontWeight: 600,
                       color: isPositive ? "#059669" : "#dc2626",
                       boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                      zIndex: 1,
+                      zIndex: 10,
                       border: "1px solid",
                       borderColor: isPositive ? "#d1fae5" : "#fecaca",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {isPositive ? "+" : ""}
@@ -720,7 +725,7 @@ const ScenarioTrendLines = ({
                       ? `${(value * 100).toFixed(1)}%`
                       : selectedMetric.includes("NPV") ||
                         selectedMetric.includes("PNL")
-                      ? `₹${(value / 1000000).toFixed(1)}M`
+                      ? `₹${(value / 10000000).toFixed(1)}Cr`
                       : value.toFixed(0)}
                   </Box>
                 </Box>
@@ -1060,9 +1065,9 @@ export default function RiskScenarios({ scenario }: Props) {
                 </Typography>
                 <Box
                   sx={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                    gap: 2,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 3,
                   }}
                 >
                   {DEFAULT_SCENARIOS.map((scenario) => (
@@ -1070,10 +1075,10 @@ export default function RiskScenarios({ scenario }: Props) {
                       key={scenario.id}
                       elevation={0}
                       sx={{
-                        p: 2,
+                        p: 3,
                         cursor: "pointer",
                         border: "2px solid",
-                        borderRadius: 2,
+                        borderRadius: 3,
                         transition: "all 0.3s ease",
                         transform: selectedScenarios.includes(scenario.id)
                           ? "scale(1.02)"
@@ -1086,7 +1091,7 @@ export default function RiskScenarios({ scenario }: Props) {
                           : "white",
                         "&:hover": {
                           transform: "scale(1.02)",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          boxShadow: "0 8px 25px rgba(139, 92, 246, 0.2)",
                         },
                       }}
                       onClick={() => toggleScenario(scenario.id)}
@@ -1096,7 +1101,7 @@ export default function RiskScenarios({ scenario }: Props) {
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "flex-start",
-                          mb: 1,
+                          mb: 2,
                         }}
                       >
                         <Box>
@@ -1125,8 +1130,8 @@ export default function RiskScenarios({ scenario }: Props) {
                       {Object.keys(scenario.overrides || {}).length > 0 && (
                         <Box
                           sx={{
-                            mt: 1.5,
-                            pt: 1.5,
+                            mt: 2,
+                            pt: 2,
                             borderTop: "1px solid #f3f4f6",
                           }}
                         >
@@ -1136,13 +1141,13 @@ export default function RiskScenarios({ scenario }: Props) {
                               color: "#6b7280",
                               fontWeight: 600,
                               display: "block",
-                              mb: 0.5,
+                              mb: 1,
                             }}
                           >
                             Key Changes:
                           </Typography>
                           <Box
-                            sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}
+                            sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}
                           >
                             {Object.entries(scenario.overrides || {})
                               .slice(0, 3)
@@ -1161,8 +1166,9 @@ export default function RiskScenarios({ scenario }: Props) {
                                   size="medium"
                                   variant="outlined"
                                   sx={{
-                                    fontSize: "0.65rem",
-                                    height: 18,
+                                    fontSize: "0.75rem",
+                                    height: 22,
+                                    px: 1,
                                     "& .MuiChip-label": {
                                       overflow: "hidden",
                                       textOverflow: "ellipsis",
@@ -1180,7 +1186,7 @@ export default function RiskScenarios({ scenario }: Props) {
                                 } more`}
                                 size="small"
                                 variant="outlined"
-                                sx={{ fontSize: "0.65rem", height: 18 }}
+                                sx={{ fontSize: "0.75rem", height: 22, px: 1 }}
                               />
                             )}
                           </Box>
@@ -1397,7 +1403,7 @@ export default function RiskScenarios({ scenario }: Props) {
                       sx={{ color: "#166534", fontWeight: 700 }}
                     >
                       {data?.baseline?.NPV
-                        ? `₹${(data.baseline.NPV / 1000000).toFixed(1)}M`
+                        ? `₹${(data.baseline.NPV / 10000000).toFixed(1)}Cr`
                         : "N/A"}
                     </Typography>
                     <Typography variant="caption" sx={{ color: "#14532d" }}>
@@ -1780,8 +1786,8 @@ export default function RiskScenarios({ scenario }: Props) {
                           ? `₹${(
                               ((data.baseline[
                                 selectedMetric as keyof typeof data.baseline
-                              ] as number) || 0) / 1000000
-                            ).toFixed(1)}M`
+                              ] as number) || 0) / 10000000
+                            ).toFixed(1)}Cr`
                           : (
                               (data.baseline[
                                 selectedMetric as keyof typeof data.baseline
@@ -1848,9 +1854,9 @@ export default function RiskScenarios({ scenario }: Props) {
                             selectedMetric.includes("NPV") ||
                             selectedMetric.includes("PNL")
                           ) {
-                            return `₹${(min / 1000000).toFixed(1)}M - ₹${(
-                              max / 1000000
-                            ).toFixed(1)}M`;
+                            return `₹${(min / 10000000).toFixed(1)}Cr - ₹${(
+                              max / 10000000
+                            ).toFixed(1)}Cr`;
                           } else {
                             return `${min.toFixed(0)} - ${max.toFixed(0)}`;
                           }
@@ -2133,7 +2139,9 @@ export default function RiskScenarios({ scenario }: Props) {
                             align="right"
                             sx={{ fontFamily: "monospace", color: "#059669" }}
                           >
-                            {scenario.metrics.NPV?.toFixed(2) || "N/A"}
+                            {scenario.metrics.NPV
+                              ? (scenario.metrics.NPV / 10000000).toFixed(2)
+                              : "N/A"}
                           </TableCell>
                           <TableCell
                             align="right"
@@ -2147,13 +2155,19 @@ export default function RiskScenarios({ scenario }: Props) {
                             align="right"
                             sx={{ fontFamily: "monospace", color: "#059669" }}
                           >
-                            {scenario.metrics.PNL_Y1?.toFixed(2) || "N/A"}
+                            {scenario.metrics.PNL_Y1
+                              ? (scenario.metrics.PNL_Y1 / 10000000).toFixed(2)
+                              : "N/A"}
                           </TableCell>
                           <TableCell
                             align="right"
                             sx={{ fontFamily: "monospace", color: "#059669" }}
                           >
-                            {scenario.metrics.PNL_TOTAL?.toFixed(2) || "N/A"}
+                            {scenario.metrics.PNL_TOTAL
+                              ? (scenario.metrics.PNL_TOTAL / 10000000).toFixed(
+                                  2
+                                )
+                              : "N/A"}
                           </TableCell>
                         </TableRow>
                       ))}

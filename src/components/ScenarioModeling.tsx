@@ -205,51 +205,85 @@ export default function ScenarioModeling({
     setLoading(true);
     setError(null);
 
-    // Simulate 5-second calculation time
+    // Simulate 5-second calculation time for better UX
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
     try {
-      // Mock results for demonstration
-      const mockResults = {
-        baseline: {
-          npv: 12500000,
-          irr: 0.18,
-          payback: 3.2,
-          roi: 0.25,
+      // Convert selected scenarios to the format expected by the API
+      const scenarioDefinitions = selectedScenarios.map((scenarioId) => {
+        const scenarioData = [...DEFAULT_SCENARIOS, ...customScenarios].find(
+          (s) => s.id === scenarioId
+        );
+        if (!scenarioData) throw new Error(`Scenario ${scenarioId} not found`);
+
+        // Convert variables to overrides format
+        const overrides: Record<string, number> = {};
+        scenarioData.variables.forEach((variable) => {
+          overrides[variable.path] = variable.newValue;
+        });
+
+        return {
+          id: scenarioData.id,
+          name: scenarioData.name,
+          overrides,
+        };
+      });
+
+      // Call the scenario simulation API
+      const response = await fetch("/api/simulations/scenario", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        scenarios: activeScenarios.map((scenario) => ({
-          id: scenario.id,
-          name: scenario.name,
-          npv:
-            scenario.category === "optimistic"
-              ? 18500000
-              : scenario.category === "pessimistic"
-              ? 6500000
-              : 13500000,
-          irr:
-            scenario.category === "optimistic"
-              ? 0.28
-              : scenario.category === "pessimistic"
-              ? 0.12
-              : 0.2,
-          payback:
-            scenario.category === "optimistic"
-              ? 2.1
-              : scenario.category === "pessimistic"
-              ? 4.8
-              : 2.9,
-          roi:
-            scenario.category === "optimistic"
-              ? 0.38
-              : scenario.category === "pessimistic"
-              ? 0.15
-              : 0.28,
-        })),
+        body: JSON.stringify({
+          businessCase,
+          scenarios: scenarioDefinitions,
+          objective: {
+            metrics: ["NPV", "IRR", "PNL_Y1", "PNL_TOTAL"],
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || `HTTP error! status: ${response.status}`
+        );
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || "API call failed");
+      }
+
+      // Transform API response to match expected format
+      const transformedResults = {
+        baseline: {
+          npv: result.data.baseline.NPV || 0,
+          irr: result.data.baseline.IRR || 0,
+          payback: 0, // Not provided by API, could be calculated
+          roi: 0, // Not provided by API, could be calculated
+        },
+        scenarios: result.data.results.map((scenarioResult: any) => {
+          const scenarioData = [...DEFAULT_SCENARIOS, ...customScenarios].find(
+            (s) => s.id === scenarioResult.scenarioId
+          );
+          return {
+            id: scenarioResult.scenarioId,
+            name: scenarioData?.name || scenarioResult.scenarioId,
+            npv: scenarioResult.metrics.NPV || 0,
+            irr: scenarioResult.metrics.IRR || 0,
+            payback: 0, // Not provided by API
+            roi: 0, // Not provided by API
+          };
+        }),
       };
 
-      setResults(mockResults);
-      onScenarioComplete?.(mockResults);
+      setResults(transformedResults);
+      onScenarioComplete?.(transformedResults);
     } catch (e) {
+      console.error("Scenario analysis error:", e);
       setError(e instanceof Error ? e.message : "Analysis failed");
     } finally {
       setLoading(false);
@@ -405,102 +439,103 @@ export default function ScenarioModeling({
                 >
                   📋 Preset Scenarios
                 </Typography>
-                <GridLegacy container spacing={3}>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
                   {DEFAULT_SCENARIOS.map((scenario) => (
-                    <GridLegacy component="div" key={scenario.id}>
-                      <Paper
-                        elevation={0}
+                    <Paper
+                      key={scenario.id}
+                      elevation={0}
+                      sx={{
+                        p: 4,
+                        cursor: "pointer",
+                        border: "2px solid",
+                        borderRadius: 3,
+                        transition: "all 0.3s ease",
+                        transform: selectedScenarios.includes(scenario.id)
+                          ? "scale(1.02)"
+                          : "scale(1)",
+                        borderColor: selectedScenarios.includes(scenario.id)
+                          ? scenario.color
+                          : "#e5e7eb",
+                        background: selectedScenarios.includes(scenario.id)
+                          ? `linear-gradient(145deg, ${scenario.color}15 0%, ${scenario.color}25 100%)`
+                          : "linear-gradient(145deg, #ffffff 0%, #f9fafb 100%)",
+                        position: "relative",
+                        "&:hover": {
+                          borderColor: scenario.color,
+                          transform: "scale(1.02)",
+                          boxShadow: `0 8px 25px ${scenario.color}20`,
+                        },
+                      }}
+                      onClick={() => toggleScenario(scenario.id)}
+                    >
+                      <Box
                         sx={{
-                          p: 3,
-                          cursor: "pointer",
-                          border: "2px solid",
-                          borderRadius: 3,
-                          transition: "all 0.3s ease",
-                          transform: selectedScenarios.includes(scenario.id)
-                            ? "scale(1.02)"
-                            : "scale(1)",
-                          borderColor: selectedScenarios.includes(scenario.id)
-                            ? scenario.color
-                            : "#e5e7eb",
-                          background: selectedScenarios.includes(scenario.id)
-                            ? `linear-gradient(145deg, ${scenario.color}15 0%, ${scenario.color}25 100%)`
-                            : "linear-gradient(145deg, #ffffff 0%, #f9fafb 100%)",
-                          "&:hover": {
-                            borderColor: scenario.color,
-                            transform: "scale(1.02)",
-                            boxShadow: `0 8px 25px ${scenario.color}20`,
-                          },
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
+                          mb: 3,
                         }}
-                        onClick={() => toggleScenario(scenario.id)}
                       >
                         <Box
                           sx={{
+                            color: scenario.color,
                             display: "flex",
                             alignItems: "center",
-                            gap: 2,
-                            mb: 2,
                           }}
                         >
-                          <Box
-                            sx={{
-                              color: scenario.color,
-                              display: "flex",
-                              alignItems: "center",
-                            }}
-                          >
-                            {getCategoryIcon(scenario.category)}
-                          </Box>
-                          <Typography
-                            variant="h6"
-                            sx={{ fontWeight: 700, color: "#1f2937" }}
-                          >
-                            {scenario.name}
-                          </Typography>
+                          {getCategoryIcon(scenario.category)}
                         </Box>
                         <Typography
-                          variant="body2"
-                          sx={{ color: "#6b7280", mb: 2 }}
+                          variant="h6"
+                          sx={{ fontWeight: 700, color: "#1f2937" }}
                         >
-                          {scenario.description}
+                          {scenario.name}
                         </Typography>
-                        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                          {scenario.variables.map((variable, index) => (
-                            <Chip
-                              key={index}
-                              label={`${variable.label}: ${
-                                variable.newValue > variable.currentValue
-                                  ? "+"
-                                  : ""
-                              }${(
-                                (variable.newValue / variable.currentValue -
-                                  1) *
-                                100
-                              ).toFixed(0)}%`}
-                              size="small"
-                              sx={{
-                                background: getImpactColor(variable.impact),
-                                color: "white",
-                                fontSize: "0.7rem",
-                                height: 20,
-                              }}
-                            />
-                          ))}
-                        </Box>
-                        {selectedScenarios.includes(scenario.id) && (
-                          <CheckCircle
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "#6b7280", mb: 3 }}
+                      >
+                        {scenario.description}
+                      </Typography>
+                      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                        {scenario.variables.map((variable, index) => (
+                          <Chip
+                            key={index}
+                            label={`${variable.label}: ${
+                              variable.newValue > variable.currentValue
+                                ? "+"
+                                : ""
+                            }${(
+                              (variable.newValue / variable.currentValue - 1) *
+                              100
+                            ).toFixed(0)}%`}
+                            size="small"
                             sx={{
-                              position: "absolute",
-                              top: 12,
-                              right: 12,
-                              color: scenario.color,
-                              fontSize: 24,
+                              background: getImpactColor(variable.impact),
+                              color: "white",
+                              fontSize: "0.75rem",
+                              height: 24,
+                              px: 1.5,
+                              fontWeight: 500,
                             }}
                           />
-                        )}
-                      </Paper>
-                    </GridLegacy>
+                        ))}
+                      </Box>
+                      {selectedScenarios.includes(scenario.id) && (
+                        <CheckCircle
+                          sx={{
+                            position: "absolute",
+                            top: 16,
+                            right: 16,
+                            color: scenario.color,
+                            fontSize: 28,
+                          }}
+                        />
+                      )}
+                    </Paper>
                   ))}
-                </GridLegacy>
+                </Box>
               </Box>
             </Box>
           </Collapse>
@@ -564,7 +599,7 @@ export default function ScenarioModeling({
                   variant="body1"
                   sx={{ color: "#6b7280", mb: 4, maxWidth: 600, mx: "auto" }}
                 >
-                  Our AI-powered engine is analyzing {activeScenarios.length}{" "}
+                  Our AI-powered engine is analyzing {selectedScenarios.length}{" "}
                   scenarios with advanced financial modeling, Monte Carlo
                   simulations, and risk assessment algorithms...
                 </Typography>

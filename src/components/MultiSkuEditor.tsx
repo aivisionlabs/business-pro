@@ -95,22 +95,6 @@ export default function MultiSkuEditor({
   // State for expanded team card
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
 
-  // Debug logging for plant data
-  console.log("MultiSkuEditor - plantOptions:", plantOptions);
-  console.log(
-    "MultiSkuEditor - plantOptions length:",
-    plantOptions?.length || 0
-  );
-  console.log("MultiSkuEditor - first plant:", plantOptions?.[0]);
-  console.log(
-    "MultiSkuEditor - scenario skus:",
-    scenario.skus.map((s) => ({
-      id: s.id,
-      name: s.name,
-      plant: s.plantMaster?.plant,
-    }))
-  );
-
   // Ensure activeSkuId is always valid when scenario changes
   useEffect(() => {
     if (scenario.skus.length > 0) {

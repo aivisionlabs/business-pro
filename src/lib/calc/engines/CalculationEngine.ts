@@ -629,25 +629,8 @@ export class CalculationEngine {
    * Calculate tax for a specific year (matches original)
    */
   private static calculateTax(calc: CalcOutput, year: number, scenario: Scenario): number {
-    const ebitda = this.calculateEbitda(calc, year);
-    const revenueNet = calc.pnl[year - 1]?.revenueNet || 0;
-
-    // Calculate total depreciation across all SKUs for this year
-    const depreciation = this.calculateTotalDepreciation(scenario);
-    const ebit = ebitda - depreciation;
-
-    // Calculate interest
-    const totalCapex = scenario.skus.reduce((total, sku) => {
-      return total + (sku.ops?.costOfNewMachine || 0) + (sku.ops?.costOfOldMachine || 0);
-    }, 0);
-    const workingCapitalDays = Math.max(
-      60,
-      ...scenario.skus.map((s) => s.ops?.workingCapitalDays || 60)
-    );
-    const workingCapitalInvestment = revenueNet * (workingCapitalDays / 365);
-    const totalInvestment = totalCapex + workingCapitalInvestment;
-    const interest = totalInvestment * scenario.finance.costOfDebtPct;
-
+    const ebit = this.calculateEbit(calc, year, scenario);
+    const interest = this.calculateInterest(scenario, calc, year);
     const pbt = ebit - interest;
     // Tax = Tax Rate × PBT
     return pbt * scenario.finance.corporateTaxRatePct;
