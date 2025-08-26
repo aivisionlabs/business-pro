@@ -248,18 +248,78 @@ export default function QuoteCalculator({
         throw new Error("Failed to export quote");
       }
 
-      const result = await response.json();
+      // Handle different export formats
+      if (format === "pdf") {
+        // For PDF, we get HTML content that can be printed to PDF
+        const htmlContent = await response.text();
 
-      // Create and download the file
-      const blob = new Blob([result.content], { type: result.mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = result.filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+        // Create a new window with the HTML content for printing
+        const printWindow = window.open("", "_blank");
+        if (printWindow) {
+          printWindow.document.write(htmlContent);
+          printWindow.document.close();
+
+          // Wait for content to load then trigger print
+          printWindow.onload = () => {
+            // Show a message to the user
+            if (
+              printWindow.confirm(
+                "The quote has opened in a new window. Click OK to print, or Cancel to save as HTML file."
+              )
+            ) {
+              printWindow.print();
+              // Close the window after printing
+              setTimeout(() => printWindow.close(), 1000);
+            } else {
+              // User chose to save as HTML file
+              const blob = new Blob([htmlContent], { type: "text/html" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `quote-${quote.quoteName || "export"}.html`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              printWindow.close();
+            }
+          };
+        } else {
+          // Fallback: download as HTML file
+          const blob = new Blob([htmlContent], { type: "text/html" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `quote-${quote.quoteName || "export"}.html`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      } else {
+        // For Excel/CSV, get the blob and download
+        const contentDisposition = response.headers.get("content-disposition");
+        let filename = "quote-export.csv";
+
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(
+            /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+          );
+          if (filenameMatch && filenameMatch[1]) {
+            filename = filenameMatch[1].replace(/['"]/g, "");
+          }
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to export quote");
     } finally {

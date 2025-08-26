@@ -11,8 +11,8 @@ import { nanoid } from "nanoid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import FreeCashFlow from "./FreeCashFlow";
-import PnlAggregated from "./PnlAggregated";
-import PnlPerKg from "./PnlPerKg";
+import MergedPnlTable from "./MergedPnlTable";
+import CaseProgressBar from "./CaseProgressBar";
 
 import { formatCrores, formatPct } from "@/lib/utils";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
@@ -80,175 +80,6 @@ function useAutoSave(
   return { triggerAutoSave, autoSaveTimer };
 }
 
-// Progress calculation helper
-function calculateCardProgress(
-  sku: Sku,
-  team: string,
-  scenario?: Scenario
-): { percentage: number; filledFields: number; totalFields: number } {
-  const fieldConfigs: Record<
-    string,
-    Array<{
-      field: string;
-      path: string;
-      mandatory: boolean;
-      prefilled?: boolean;
-    }>
-  > = {
-    sales: [
-      { field: "name", path: "name", mandatory: true },
-      {
-        field: "baseAnnualVolumePieces",
-        path: "sales.baseAnnualVolumePieces",
-        mandatory: true,
-      },
-      {
-        field: "conversionRecoveryRsPerPiece",
-        path: "sales.conversionRecoveryRsPerPiece",
-        mandatory: true,
-      },
-      {
-        field: "productWeightGrams",
-        path: "sales.productWeightGrams",
-        mandatory: true,
-      },
-    ],
-    pricing: [
-      { field: "resinRsPerKg", path: "costing.resinRsPerKg", mandatory: true },
-      {
-        field: "freightOutRsPerKg",
-        path: "costing.freightOutRsPerKg",
-        mandatory: true,
-      },
-      { field: "mbRsPerKg", path: "costing.mbRsPerKg", mandatory: true },
-      {
-        field: "packagingRsPerKg",
-        path: "costing.packagingRsPerKg",
-        mandatory: true,
-      },
-    ],
-    npd: [
-      { field: "cavities", path: "npd.cavities", mandatory: true },
-      {
-        field: "cycleTimeSeconds",
-        path: "npd.cycleTimeSeconds",
-        mandatory: true,
-      },
-      {
-        field: "productWeightGrams",
-        path: "sales.productWeightGrams",
-        mandatory: true,
-      },
-      { field: "plant", path: "plantMaster.plant", mandatory: true },
-    ],
-    ops: [
-      {
-        field: "newMachineRequired",
-        path: "ops.newMachineRequired",
-        mandatory: true,
-      },
-      {
-        field: "newMouldRequired",
-        path: "ops.newMouldRequired",
-        mandatory: true,
-      },
-      { field: "machineName", path: "npd.machineName", mandatory: true },
-      {
-        field: "costOfNewMachine",
-        path: "ops.costOfNewMachine",
-        mandatory: true,
-      },
-      {
-        field: "costOfOldMachine",
-        path: "ops.costOfOldMachine",
-        mandatory: true,
-      },
-      { field: "costOfNewMould", path: "ops.costOfNewMould", mandatory: true },
-      { field: "costOfOldMould", path: "ops.costOfOldMould", mandatory: true },
-      { field: "costOfNewInfra", path: "ops.costOfNewInfra", mandatory: true },
-      { field: "costOfOldInfra", path: "ops.costOfOldInfra", mandatory: true },
-    ],
-    finance: [
-      {
-        field: "corporateTaxRatePct",
-        path: "finance.corporateTaxRatePct",
-        mandatory: true,
-      },
-      {
-        field: "debtPct",
-        path: "finance.debtPct",
-        mandatory: true,
-      },
-      {
-        field: "costOfDebtPct",
-        path: "finance.costOfDebtPct",
-        mandatory: true,
-      },
-      {
-        field: "costOfEquityPct",
-        path: "finance.costOfEquityPct",
-        mandatory: true,
-      },
-      {
-        field: "annualVolumeGrowthPct",
-        path: "finance.annualVolumeGrowthPct",
-        mandatory: false,
-      },
-    ],
-  };
-
-  const config = fieldConfigs[team as keyof typeof fieldConfigs];
-  if (!config) return { percentage: 0, filledFields: 0, totalFields: 0 };
-
-  let completedFields = 0;
-  let totalFields = 0;
-
-  config.forEach(({ path, mandatory, prefilled }) => {
-    // For finance team, count all fields regardless of mandatory status
-    // For other teams, only count mandatory or prefilled fields
-    if (team === "finance" || mandatory || prefilled) {
-      totalFields++;
-      let value: any;
-      if (path === "name") {
-        value = sku.name;
-      } else if (path.startsWith("sales.")) {
-        const key = path.split(".")[1] as keyof typeof sku.sales;
-        value = sku.sales[key];
-      } else if (path.startsWith("npd.")) {
-        const key = path.split(".")[1] as keyof typeof sku.npd;
-        value = sku.npd[key];
-      } else if (path.startsWith("ops.")) {
-        const key = path.split(".")[1] as keyof typeof sku.ops;
-        value = sku.ops[key];
-      } else if (path.startsWith("costing.")) {
-        const key = path.split(".")[1] as keyof typeof sku.costing;
-        value = sku.costing[key];
-      } else if (path.startsWith("plantMaster.")) {
-        const key = path.split(".")[1] as keyof typeof sku.plantMaster;
-        value = sku.plantMaster[key];
-      } else if (path.startsWith("finance.")) {
-        // For finance fields, we need to access scenario.finance
-        if (!scenario) return;
-        const key = path.split(".")[1] as keyof typeof scenario.finance;
-        value = scenario.finance[key];
-      }
-
-      if (
-        prefilled ||
-        (value !== undefined && value !== null && value !== "")
-      ) {
-        completedFields++;
-      }
-    }
-  });
-
-  return {
-    percentage: totalFields > 0 ? (completedFields / totalFields) * 100 : 100,
-    filledFields: completedFields,
-    totalFields: totalFields,
-  };
-}
-
 export default function MultiSkuEditor({
   scenario: initial,
   plantOptions,
@@ -259,6 +90,25 @@ export default function MultiSkuEditor({
   const [scenario, setScenario] = useState<Scenario>(initial);
   const [activeSkuId, setActiveSkuId] = useState<string>(
     initial.skus[0]?.id || ""
+  );
+
+  // State for expanded team card
+  const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
+
+  // Debug logging for plant data
+  console.log("MultiSkuEditor - plantOptions:", plantOptions);
+  console.log(
+    "MultiSkuEditor - plantOptions length:",
+    plantOptions?.length || 0
+  );
+  console.log("MultiSkuEditor - first plant:", plantOptions?.[0]);
+  console.log(
+    "MultiSkuEditor - scenario skus:",
+    scenario.skus.map((s) => ({
+      id: s.id,
+      name: s.name,
+      plant: s.plantMaster?.plant,
+    }))
   );
 
   // Ensure activeSkuId is always valid when scenario changes
@@ -272,17 +122,102 @@ export default function MultiSkuEditor({
       }
     }
   }, [scenario.skus, activeSkuId]);
-  const [isSaving, setIsSaving] = useState(false);
 
-  // State for collapsible P&L sections
-  const [pnlPerKgCollapsed, setPnlPerKgCollapsed] = useState(false);
-  const [pnlAggregatedCollapsed, setPnlAggregatedCollapsed] = useState(false);
+  // Ensure all SKUs have proper default values for OpsInput fields
+  useEffect(() => {
+    let needsUpdate = false;
+    const updatedSkus = scenario.skus.map((sku) => {
+      const updatedOps = { ...sku.ops };
+
+      // Check and set defaults for boolean fields
+      if (updatedOps.newMachineRequired === undefined) {
+        updatedOps.newMachineRequired = false;
+        needsUpdate = true;
+      }
+      if (updatedOps.newMouldRequired === undefined) {
+        updatedOps.newMouldRequired = false;
+        needsUpdate = true;
+      }
+      if (updatedOps.newInfraRequired === undefined) {
+        updatedOps.newInfraRequired = false;
+        needsUpdate = true;
+      }
+
+      // Check and set defaults for cost fields
+      if (updatedOps.costOfNewMachine === undefined) {
+        updatedOps.costOfNewMachine = 0;
+        needsUpdate = true;
+      }
+      if (updatedOps.costOfOldMachine === undefined) {
+        updatedOps.costOfOldMachine = 0;
+        needsUpdate = true;
+      }
+      if (updatedOps.costOfNewMould === undefined) {
+        updatedOps.costOfNewMould = 0;
+        needsUpdate = true;
+      }
+      if (updatedOps.costOfOldMould === undefined) {
+        updatedOps.costOfOldMould = 0;
+        needsUpdate = true;
+      }
+      if (updatedOps.costOfNewInfra === undefined) {
+        updatedOps.costOfNewInfra = 0;
+        needsUpdate = true;
+      }
+      if (updatedOps.costOfOldInfra === undefined) {
+        updatedOps.costOfOldInfra = 0;
+        needsUpdate = true;
+      }
+
+      // Check and set defaults for life fields
+      if (updatedOps.lifeOfNewMachineYears === undefined) {
+        updatedOps.lifeOfNewMachineYears = 15;
+        needsUpdate = true;
+      }
+      if (updatedOps.lifeOfNewMouldYears === undefined) {
+        updatedOps.lifeOfNewMouldYears = 15;
+        needsUpdate = true;
+      }
+      if (updatedOps.lifeOfNewInfraYears === undefined) {
+        updatedOps.lifeOfNewInfraYears = 30;
+        needsUpdate = true;
+      }
+
+      // Check and set defaults for other fields
+      if (updatedOps.oee === undefined) {
+        updatedOps.oee = 0.8;
+        needsUpdate = true;
+      }
+      if (updatedOps.operatingHoursPerDay === undefined) {
+        updatedOps.operatingHoursPerDay = 24;
+        needsUpdate = true;
+      }
+      if (updatedOps.workingDaysPerYear === undefined) {
+        updatedOps.workingDaysPerYear = 365;
+        needsUpdate = true;
+      }
+      if (updatedOps.workingCapitalDays === undefined) {
+        updatedOps.workingCapitalDays = 0;
+        needsUpdate = true;
+      }
+
+      return {
+        ...sku,
+        ops: updatedOps,
+      };
+    });
+
+    if (needsUpdate) {
+      console.log("Updating SKUs with default OpsInput values");
+      setScenario((prev) => ({ ...prev, skus: updatedSkus }));
+    }
+  }, [scenario.skus]);
+
+  // State for collapsible sections
   const [freeCashFlowCollapsed, setFreeCashFlowCollapsed] = useState(false);
 
   const handleSaveWithScenario = useCallback(
     async (scenarioToSave: Scenario) => {
-      setIsSaving(true);
-
       try {
         const response = await fetch(`/api/scenarios/${scenarioToSave.id}`, {
           method: "PUT",
@@ -311,8 +246,6 @@ export default function MultiSkuEditor({
         }
       } catch (error) {
         console.error("Save error:", error);
-      } finally {
-        setIsSaving(false);
       }
     },
     []
@@ -475,27 +408,50 @@ export default function MultiSkuEditor({
         baseAnnualVolumePieces: 0,
       },
       npd: { ...base.npd },
-      ops: { ...base.ops },
+      ops: {
+        ...base.ops,
+        // Ensure all required fields have proper defaults
+        newMachineRequired: false,
+        newMouldRequired: false,
+        newInfraRequired: false,
+        costOfNewMachine: 0,
+        costOfOldMachine: 0,
+        costOfNewMould: 0,
+        costOfOldMould: 0,
+        costOfNewInfra: 0,
+        costOfOldInfra: 0,
+        lifeOfNewMachineYears: 15,
+        lifeOfNewMouldYears: 15,
+        lifeOfNewInfraYears: 30,
+        oee: 0.8, // Default OEE to 80%
+        operatingHoursPerDay: 24,
+        workingDaysPerYear: 365,
+        workingCapitalDays: 0,
+      },
       costing: { ...base.costing },
       altConversion: { ...base.altConversion },
       plantMaster: { ...base.plantMaster },
     };
 
+    const originalScenario = scenario;
+    const originalActiveSkuId = activeSkuId;
+    const updatedScenario = {
+      ...scenario,
+      skus: [...scenario.skus, next],
+    };
+
     // Update local state first
-    setScenario((prev) => ({ ...prev, skus: [...prev.skus, next] }));
+    setScenario(updatedScenario);
     setActiveSkuId(id);
 
     // Auto-save to Firestore
     try {
-      await handleSaveWithScenario(scenario);
+      await handleSaveWithScenario(updatedScenario);
     } catch (error) {
       console.error("Failed to auto-save after SKU addition:", error);
       // Revert the addition if save fails
-      setScenario((prev) => ({
-        ...prev,
-        skus: prev.skus.filter((s) => s.id !== id),
-      }));
-      setActiveSkuId(activeSkuId);
+      setScenario(originalScenario);
+      setActiveSkuId(originalActiveSkuId);
       alert("Failed to save changes. SKU addition was reverted.");
     }
   }
@@ -508,24 +464,20 @@ export default function MultiSkuEditor({
     const skuName = sku.name || sku.id;
     if (!confirm(`Delete SKU "${skuName}"? This cannot be undone.`)) return;
 
-    // Update local state first
-    setScenario((prev) => {
-      const filtered = prev.skus.filter((s) => s.id !== activeSkuId);
-      const nextActive = filtered[0]?.id || "";
-      setActiveSkuId(nextActive);
-      return { ...prev, skus: filtered };
-    });
+    const originalScenario = scenario;
+    const skusAfterDeletion = scenario.skus.filter((s) => s.id !== activeSkuId);
+    const updatedScenario = { ...scenario, skus: skusAfterDeletion };
+    const nextActiveSkuId = skusAfterDeletion[0]?.id || "";
 
-    // Auto-save to Firestore
+    setActiveSkuId(nextActiveSkuId);
+    setScenario(updatedScenario);
+
     try {
-      await handleSaveWithScenario(scenario);
+      await handleSaveWithScenario(updatedScenario);
     } catch (error) {
       console.error("Failed to auto-save after SKU deletion:", error);
       // Revert the deletion if save fails
-      setScenario((prev) => ({
-        ...prev,
-        skus: [...prev.skus, sku],
-      }));
+      setScenario(originalScenario);
       setActiveSkuId(activeSkuId);
       alert("Failed to save changes. SKU deletion was reverted.");
     }
@@ -548,6 +500,15 @@ export default function MultiSkuEditor({
       document.removeEventListener("wheel", preventScrollOnNumberInputs);
     };
   }, []);
+
+  const handleTeamCardClick = (teamName: string) => {
+    const normalizedTeamName = teamName.toLowerCase();
+    if (expandedTeam === normalizedTeamName) {
+      setExpandedTeam(null);
+    } else {
+      setExpandedTeam(normalizedTeamName);
+    }
+  };
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -599,6 +560,13 @@ export default function MultiSkuEditor({
           </Button>
         </Box>
       </Box>
+
+      {/* Case Progress Bar */}
+      <CaseProgressBar
+        scenario={scenario}
+        onTeamCardClick={handleTeamCardClick}
+        expandedTeam={expandedTeam}
+      />
 
       {/* Global sticky metrics bar for immediate feedback */}
       <Card
@@ -717,345 +685,214 @@ export default function MultiSkuEditor({
         </CardContent>
       </Card>
 
-      <Box
-        sx={{
-          display: "grid",
-          gap: 2,
-          gridTemplateColumns: { xs: "1fr", md: "1fr", lg: "6fr 6fr" },
-          alignItems: "start",
-          minHeight: 0, // Allow grid to shrink
-          width: "100%", // Ensure full width
-          overflow: "hidden", // Prevent any overflow
-        }}
-      >
-        {/* Left column - Team cards */}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {/* Finance Team Card */}
-          <FinanceTeamCard
-            scenario={scenario}
-            updateFinanceDetails={updateFinanceDetails}
-            triggerAutoSave={triggerAutoSave}
-            progress={
-              calculateCardProgress(sku, "finance", scenario).percentage
-            }
-            filledFields={
-              calculateCardProgress(sku, "finance", scenario).filledFields
-            }
-            totalFields={
-              calculateCardProgress(sku, "finance", scenario).totalFields
-            }
-          />
+      {/* Team Input Forms - Show when team card is clicked */}
+      {expandedTeam === "finance" && (
+        <FinanceTeamCard
+          scenario={scenario}
+          updateFinanceDetails={updateFinanceDetails}
+          triggerAutoSave={triggerAutoSave}
+        />
+      )}
 
-          {/* Modern SKU Management Section */}
-          <Card
-            variant="outlined"
-            sx={{
-              background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-              border: "1px solid #e2e8f0",
-              borderRadius: 3,
-              boxShadow:
-                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-            }}
-          >
-            <CardHeader
-              title={
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Typography
-                    variant="h6"
-                    fontWeight={700}
-                    color="text.primary"
-                  >
-                    SKU Management
-                  </Typography>
-                  <Chip
-                    label={`${scenario.skus.length} SKU${
-                      scenario.skus.length !== 1 ? "s" : ""
-                    }`}
-                    size="small"
-                    color="primary"
-                    variant="outlined"
-                  />
-                </Box>
-              }
-              action={
-                <Box display="flex" gap={1}>
-                  <Button
-                    variant="contained"
-                    onClick={addSku}
-                    startIcon={<span style={{ fontSize: "18px" }}>+</span>}
-                    sx={{
-                      background:
-                        "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
-                      borderRadius: 2,
-                      textTransform: "none",
-                      fontWeight: 600,
-                      boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)",
-                      "&:hover": {
-                        background:
-                          "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)",
-                        boxShadow: "0 10px 15px -3px rgba(59, 130, 246, 0.4)",
-                      },
-                    }}
-                  >
-                    Add SKU
-                  </Button>
-                  <Button
-                    color="error"
-                    variant="outlined"
-                    onClick={deleteActiveSku}
-                    sx={{
-                      borderRadius: 2,
-                      textTransform: "none",
-                      fontWeight: 600,
-                      borderColor: "#ef4444",
-                      color: "#ef4444",
-                      "&:hover": {
-                        borderColor: "#dc2626",
-                        backgroundColor: "rgba(239, 68, 68, 0.04)",
-                      },
-                    }}
-                  >
-                    Delete SKU
-                  </Button>
-                </Box>
-              }
-              sx={{
-                pb: 1,
-                "& .MuiCardHeader-action": { alignSelf: "center" },
-              }}
-            />
-
-            <CardContent sx={{ pt: 0 }}>
-              {/* SKU Navigation Tabs */}
-              <Box sx={{ mb: 3 }}>
-                <Tabs
-                  value={activeSkuIndex}
-                  onChange={(_, idx) => setActiveSkuId(scenario.skus[idx].id)}
-                  variant="scrollable"
-                  scrollButtons
-                  allowScrollButtonsMobile
+      {/* SKU Management Section - Show when any SKU-level team is clicked */}
+      {(expandedTeam === "sales" ||
+        expandedTeam === "pricing" ||
+        expandedTeam === "npd" ||
+        expandedTeam === "ops") && (
+        <Card
+          variant="outlined"
+          sx={{
+            background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+            border: "1px solid #e2e8f0",
+            borderRadius: 3,
+            boxShadow:
+              "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+          }}
+        >
+          <CardHeader
+            title={
+              <Box display="flex" alignItems="center" gap={2}>
+                <Typography variant="h6" fontWeight={700} color="text.primary">
+                  SKU Management
+                </Typography>
+                <Chip
+                  label={`${scenario.skus.length} SKU${
+                    scenario.skus.length !== 1 ? "s" : ""
+                  }`}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+              </Box>
+            }
+            action={
+              <Box display="flex" gap={1}>
+                <Button
+                  variant="contained"
+                  onClick={addSku}
+                  startIcon={<span style={{ fontSize: "18px" }}>+</span>}
                   sx={{
-                    "& .MuiTabs-indicator": {
-                      height: 3,
-                      borderRadius: 1.5,
+                    background:
+                      "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)",
+                    "&:hover": {
                       background:
-                        "linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%)",
-                    },
-                    "& .MuiTab-root": {
-                      minHeight: 40,
-                      padding: "4px 12px",
-                      textTransform: "none",
-                      fontWeight: 600,
-                      fontSize: "1rem",
-                      "&.Mui-selected": {
-                        color: "#1d4ed8",
-                        fontWeight: 600,
-                      },
+                        "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)",
+                      boxShadow: "0 10px 15px -3px rgba(59, 130, 246, 0.4)",
                     },
                   }}
                 >
-                  {scenario.skus.map((s, idx) => (
-                    <Tab key={`${s.id}-${s.name}`} label={s.name} value={idx} />
-                  ))}
-                </Tabs>
+                  Add SKU
+                </Button>
+                <Button
+                  color="error"
+                  variant="outlined"
+                  onClick={deleteActiveSku}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderColor: "#ef4444",
+                    color: "#ef4444",
+                    "&:hover": {
+                      borderColor: "#dc2626",
+                      backgroundColor: "rgba(239, 68, 68, 0.04)",
+                    },
+                  }}
+                >
+                  Delete SKU
+                </Button>
               </Box>
+            }
+            sx={{
+              pb: 1,
+              "& .MuiCardHeader-action": { alignSelf: "center" },
+            }}
+          />
 
-              {/* Active SKU Indicator */}
-              {sku && (
-                <Box sx={{ mb: 2, p: 1.5, borderRadius: 1 }}>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 1 }}
-                  >
-                    Active: <strong>{sku.name}</strong>
-                  </Typography>
+          <CardContent sx={{ pt: 0 }}>
+            {/* SKU Navigation Tabs */}
+            <Box sx={{ mb: 3 }}>
+              <Tabs
+                value={activeSkuIndex}
+                onChange={(_, idx) => setActiveSkuId(scenario.skus[idx].id)}
+                variant="scrollable"
+                scrollButtons
+                allowScrollButtonsMobile
+                sx={{
+                  "& .MuiTabs-indicator": {
+                    height: 3,
+                    borderRadius: 1.5,
+                    background:
+                      "linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%)",
+                  },
+                  "& .MuiTab-root": {
+                    minHeight: 40,
+                    padding: "4px 12px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    fontSize: "1rem",
+                    "&.Mui-selected": {
+                      color: "#1d4ed8",
+                      fontWeight: 600,
+                    },
+                  },
+                }}
+              >
+                {scenario.skus.map((s, idx) => (
+                  <Tab key={`${s.id}-${s.name}`} label={s.name} value={idx} />
+                ))}
+              </Tabs>
+            </Box>
 
-                  {/* Team Input Cards */}
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
-                  >
+            {/* Active SKU Indicator */}
+            {sku && (
+              <Box sx={{ mb: 2, p: 1.5, borderRadius: 1 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                >
+                  Active: <strong>{sku.name}</strong>
+                </Typography>
+
+                {/* Team Input Cards - Only show when expanded */}
+                <Box
+                  sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
+                >
+                  {expandedTeam === "sales" && (
                     <SalesTeamCard
                       sku={sku}
                       updateSku={updateSku}
                       triggerAutoSave={triggerAutoSave}
-                      progress={calculateCardProgress(sku, "sales").percentage}
-                      filledFields={
-                        calculateCardProgress(sku, "sales").filledFields
-                      }
-                      totalFields={
-                        calculateCardProgress(sku, "sales").totalFields
-                      }
                     />
+                  )}
 
+                  {expandedTeam === "pricing" && (
                     <PricingTeamCard
                       sku={sku}
                       updateSku={updateSku}
                       triggerAutoSave={triggerAutoSave}
-                      progress={
-                        calculateCardProgress(sku, "pricing").percentage
-                      }
-                      filledFields={
-                        calculateCardProgress(sku, "pricing").filledFields
-                      }
-                      totalFields={
-                        calculateCardProgress(sku, "pricing").totalFields
-                      }
                     />
+                  )}
 
+                  {expandedTeam === "npd" && (
                     <NpdTeamCard
                       sku={sku}
                       plantOptions={plantOptions}
                       updateSku={updateSku}
                       triggerAutoSave={triggerAutoSave}
-                      progress={calculateCardProgress(sku, "npd").percentage}
-                      filledFields={
-                        calculateCardProgress(sku, "npd").filledFields
-                      }
-                      totalFields={
-                        calculateCardProgress(sku, "npd").totalFields
-                      }
                     />
+                  )}
 
+                  {expandedTeam === "ops" && (
                     <OpsTeamCard
                       sku={sku}
                       updateSku={updateSku}
                       triggerAutoSave={triggerAutoSave}
-                      progress={calculateCardProgress(sku, "ops").percentage}
-                      filledFields={
-                        calculateCardProgress(sku, "ops").filledFields
-                      }
-                      totalFields={
-                        calculateCardProgress(sku, "ops").totalFields
-                      }
                     />
-                  </Box>
+                  )}
                 </Box>
-              )}
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Full-width P&L and Cashflow tables */}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        {/* Merged P&L Table */}
+        <MergedPnlTable calc={calc} pnlAggregated={pnlAggregated} />
+
+        {/* Free Cash Flow - Collapsible */}
+        <Card variant="outlined">
+          <CardHeader
+            title={
+              <Typography variant="h6">Free Cash Flow Analysis</Typography>
+            }
+            action={
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFreeCashFlowCollapsed(!freeCashFlowCollapsed);
+                }}
+              >
+                {freeCashFlowCollapsed ? <ExpandMore /> : <ExpandLess />}
+              </IconButton>
+            }
+            onClick={() => setFreeCashFlowCollapsed(!freeCashFlowCollapsed)}
+            sx={{ cursor: "pointer" }}
+          />
+          <Collapse in={!freeCashFlowCollapsed} timeout="auto" unmountOnExit>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+              <FreeCashFlow cashflow={calc.cashflow} pnl={calc.pnl} />
             </CardContent>
-          </Card>
-        </Box>
-
-        {/* Right column - P&L and Cashflow tables in scroll */}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            height: "calc(100vh - 100px)",
-            minWidth: 0, // Allow flex item to shrink below content size
-            flexShrink: 0, // Prevent shrinking
-            maxWidth: "100%", // Ensure it doesn't exceed container width
-            overflow: "hidden", // Prevent any overflow
-          }}
-        >
-          <Box
-            sx={{
-              flex: 1,
-              overflowY: "auto",
-              overflowX: "hidden", // Prevent horizontal scroll
-              display: "flex",
-              flexDirection: "column",
-              gap: 3, // Increased gap for better spacing
-              pr: 1,
-              pb: 3,
-              minHeight: 0, // Allow flex item to shrink
-            }}
-          >
-            {/* P&L per kg - Collapsible */}
-            <Card variant="outlined" sx={{ flexShrink: 0 }}>
-              <CardHeader
-                title={
-                  <Typography variant="h6">P&L per kg (Y1..Y5)</Typography>
-                }
-                action={
-                  <IconButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPnlPerKgCollapsed(!pnlPerKgCollapsed);
-                    }}
-                  >
-                    {pnlPerKgCollapsed ? <ExpandMore /> : <ExpandLess />}
-                  </IconButton>
-                }
-                onClick={() => setPnlPerKgCollapsed(!pnlPerKgCollapsed)}
-                sx={{ cursor: "pointer" }}
-              />
-              <Collapse in={!pnlPerKgCollapsed} timeout="auto" unmountOnExit>
-                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
-                  <PnlPerKg calc={calc} pnlAggregated={pnlAggregated} />
-                </CardContent>
-              </Collapse>
-            </Card>
-
-            {/* P&L Aggregated - Collapsible */}
-            <Card variant="outlined" sx={{ flexShrink: 0 }}>
-              <CardHeader
-                title={
-                  <Typography variant="h6">P&L Aggregated (Cr)</Typography>
-                }
-                action={
-                  <IconButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPnlAggregatedCollapsed(!pnlAggregatedCollapsed);
-                    }}
-                  >
-                    {pnlAggregatedCollapsed ? <ExpandMore /> : <ExpandLess />}
-                  </IconButton>
-                }
-                onClick={() =>
-                  setPnlAggregatedCollapsed(!pnlAggregatedCollapsed)
-                }
-                sx={{ cursor: "pointer" }}
-              />
-              <Collapse
-                in={!pnlAggregatedCollapsed}
-                timeout="auto"
-                unmountOnExit
-              >
-                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
-                  <PnlAggregated pnlAggregated={pnlAggregated} />
-                </CardContent>
-              </Collapse>
-            </Card>
-
-            {/* Free Cash Flow - Collapsible */}
-            <Card variant="outlined" sx={{ flexShrink: 0 }}>
-              <CardHeader
-                title={
-                  <Typography variant="h6">Free Cash Flow Analysis</Typography>
-                }
-                action={
-                  <IconButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFreeCashFlowCollapsed(!freeCashFlowCollapsed);
-                    }}
-                  >
-                    {freeCashFlowCollapsed ? <ExpandMore /> : <ExpandLess />}
-                  </IconButton>
-                }
-                onClick={() => setFreeCashFlowCollapsed(!freeCashFlowCollapsed)}
-                sx={{ cursor: "pointer" }}
-              />
-              <Collapse
-                in={!freeCashFlowCollapsed}
-                timeout="auto"
-                unmountOnExit
-              >
-                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
-                  <FreeCashFlow cashflow={calc.cashflow} pnl={calc.pnl} />
-                </CardContent>
-              </Collapse>
-            </Card>
-          </Box>
-        </Box>
+          </Collapse>
+        </Card>
       </Box>
-
-      {/* Case Metrics Charts - COMMENTED OUT */}
-      {/* <Section title="📈 Case Performance Charts" className="mt-6">
-        <CaseMetricsCharts calcOutput={calc} />
-      </Section> */}
     </Box>
   );
 }

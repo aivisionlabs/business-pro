@@ -8,29 +8,15 @@ interface FinanceTeamCardProps {
   scenario: BusinessCase;
   updateFinanceDetails: (updater: (s: FinanceInput) => FinanceInput) => void;
   triggerAutoSave: () => void;
-  progress: number;
-  filledFields: number;
-  totalFields: number;
 }
 
 export function FinanceTeamCard({
   scenario,
   updateFinanceDetails,
   triggerAutoSave,
-  progress,
-  filledFields,
-  totalFields,
 }: FinanceTeamCardProps) {
   return (
-    <TeamCard
-      title="Finance"
-      team="Finance"
-      progress={progress}
-      filledFields={filledFields}
-      totalFields={totalFields}
-      isCollapsible={true}
-      defaultCollapsed={true}
-    >
+    <TeamCard title="Finance" isCollapsible={true} defaultCollapsed={false}>
       <Box
         sx={{
           display: "grid",

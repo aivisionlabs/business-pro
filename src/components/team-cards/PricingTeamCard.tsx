@@ -8,28 +8,15 @@ interface PricingTeamCardProps {
   sku: Sku;
   updateSku: (updater: (s: Sku) => Sku) => void;
   triggerAutoSave: () => void;
-  progress: number;
-  filledFields: number;
-  totalFields: number;
 }
 
 export function PricingTeamCard({
   sku,
   updateSku,
   triggerAutoSave,
-  progress,
-  filledFields,
-  totalFields,
 }: PricingTeamCardProps) {
   return (
-    <TeamCard
-      title="Pricing"
-      team="Pricing"
-      progress={progress}
-      filledFields={filledFields}
-      totalFields={totalFields}
-      isCollapsible={true}
-    >
+    <TeamCard title="Pricing" isCollapsible={true} defaultCollapsed={false}>
       <Box
         sx={{
           display: "grid",
@@ -51,7 +38,7 @@ export function PricingTeamCard({
           onAutoSave={triggerAutoSave}
         />
         <LabeledInput
-          label="Freight (Rs/kg)"
+          label="Freight Out (Rs/kg)"
           type="number"
           step={0.01}
           value={sku.costing.freightOutRsPerKg}
@@ -64,7 +51,7 @@ export function PricingTeamCard({
           onAutoSave={triggerAutoSave}
         />
         <LabeledInput
-          label="MB Price (Rs/kg)"
+          label="Masterbatch (Rs/kg)"
           type="number"
           step={0.01}
           value={sku.costing.mbRsPerKg}

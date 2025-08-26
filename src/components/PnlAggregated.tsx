@@ -97,7 +97,7 @@ export default function PnlAggregated({ pnlAggregated }: PnlAggregatedProps) {
                           lineHeight: 1.6,
                         }}
                       >
-                        {formatCrores(value)}
+                        {formatCrores(value ?? 0)}
                       </TableCell>
                     ))}
                   </TableRow>

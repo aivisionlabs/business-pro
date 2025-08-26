@@ -1,6 +1,7 @@
 "use client";
 
 import MultiSkuEditor from "@/components/MultiSkuEditor";
+import CaseProgressBar from "@/components/CaseProgressBar";
 import { useBusinessCase, usePlantMaster } from "@/lib/hooks/useFirestore";
 import Link from "next/link";
 import { use } from "react";

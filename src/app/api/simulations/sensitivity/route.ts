@@ -5,6 +5,8 @@ import { SimulationEngine } from "@/lib/calc/simulation/SimulationEngine";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    console.log("Sensitivity API received:", JSON.stringify(body, null, 2));
+
     const { businessCase, specs, objective, baseline } = body as {
       businessCase: BusinessCase;
       specs: PerturbationSpec[];
@@ -13,8 +15,28 @@ export async function POST(req: NextRequest) {
     };
 
     if (!businessCase || !Array.isArray(specs) || !objective) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      console.error("Validation failed:", {
+        hasBusinessCase: !!businessCase,
+        hasSpecs: !!specs,
+        specsLength: specs?.length,
+        hasObjective: !!objective
+      });
+      return NextResponse.json({
+        error: "Invalid payload",
+        details: {
+          hasBusinessCase: !!businessCase,
+          hasSpecs: !!specs,
+          specsLength: specs?.length,
+          hasObjective: !!objective
+        }
+      }, { status: 400 });
     }
+
+    console.log("Running sensitivity analysis with:", {
+      specsCount: specs.length,
+      objective: objective.metrics,
+      hasBaseline: !!baseline
+    });
 
     const result = SimulationEngine.runSensitivity(
       businessCase,
@@ -22,10 +44,16 @@ export async function POST(req: NextRequest) {
       objective,
       baseline as any
     );
+
+    console.log("Sensitivity analysis completed successfully");
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
+    console.error("Sensitivity API error:", error);
     const message = error instanceof Error ? error.message : "Server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({
+      error: message,
+      stack: error instanceof Error ? error.stack : undefined
+    }, { status: 500 });
   }
 }
 

@@ -663,8 +663,25 @@ export class QuoteCalculator {
   static updateQuoteTotals(quote: CustomerQuote): CustomerQuote {
     const updatedQuote = { ...quote };
 
+    // Recalculate totals for each SKU item
+    updatedQuote.skuItems = quote.skuItems.map(skuItem => {
+      if (!skuItem.included) return skuItem;
+
+      // Recalculate totals for this SKU
+      const totalExclGst = this.calculateTotalExclGst(skuItem.components);
+      const gst = this.calculateGst(totalExclGst, quote.gstRate);
+      const totalInclGst = this.calculateTotalInclGst(totalExclGst, gst);
+
+      return {
+        ...skuItem,
+        totalExclGst,
+        gst,
+        totalInclGst,
+      };
+    });
+
     // Recalculate aggregated totals
-    updatedQuote.aggregatedTotals = this.calculateAggregatedTotals(quote.skuItems, quote.gstRate);
+    updatedQuote.aggregatedTotals = this.calculateAggregatedTotals(updatedQuote.skuItems, quote.gstRate);
     updatedQuote.updatedAt = new Date().toISOString();
 
     return updatedQuote;

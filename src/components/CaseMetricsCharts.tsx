@@ -34,6 +34,11 @@ const COLORS = {
 };
 
 const formatCurrency = (value: number) => {
+  // Safety check to ensure value is a valid number
+  if (value === undefined || value === null || isNaN(value)) {
+    value = 0;
+  }
+
   if (Math.abs(value) >= 1e6) {
     return `₹${(value / 1e6).toFixed(1)}M`;
   } else if (Math.abs(value) >= 1e3) {
@@ -43,6 +48,11 @@ const formatCurrency = (value: number) => {
 };
 
 const formatNumber = (value: number) => {
+  // Safety check to ensure value is a valid number
+  if (value === undefined || value === null || isNaN(value)) {
+    value = 0;
+  }
+
   if (value >= 1e6) {
     return `${(value / 1e6).toFixed(1)}M`;
   } else if (value >= 1e3) {
@@ -57,34 +67,34 @@ export default function CaseMetricsCharts({
   // Prepare data for charts
   const chartData = calcOutput.pnl.map((year, index) => ({
     year: `Year ${year.year}`,
-    revenue: year.revenueNet,
-    grossMargin: year.grossMargin,
-    ebitda: year.ebitda,
-    pat: year.pat,
+    revenue: year.revenueNet ?? 0,
+    grossMargin: year.grossMargin ?? 0,
+    ebitda: year.ebitda ?? 0,
+    pat: year.pat ?? 0,
     volume: calcOutput.volumes[index]?.volumePieces || 0,
     weight: calcOutput.volumes[index]?.weightKg || 0,
-    materialCost: year.materialCost,
-    conversionCost: year.conversionCost,
-    sgaCost: year.sgaCost,
+    materialCost: year.materialCost ?? 0,
+    conversionCost: year.conversionCost ?? 0,
+    sgaCost: year.sgaCost ?? 0,
     cashFlow: calcOutput.cashflow[index]?.fcf || 0,
     cumulativeCashFlow: calcOutput.cashflow[index]?.cumulativeFcf || 0,
   }));
 
   const costBreakdownData = calcOutput.pnl.map((year) => ({
     year: `Year ${year.year}`,
-    materialCost: year.materialCost,
-    conversionCost: year.conversionCost,
-    sgaCost: year.sgaCost,
+    materialCost: year.materialCost ?? 0,
+    conversionCost: year.conversionCost ?? 0,
+    sgaCost: year.sgaCost ?? 0,
     otherCosts:
-      year.valueAddCost +
-      year.packagingCost +
-      year.freightOutCost +
-      year.rAndMCost +
-      year.otherMfgCost,
+      (year.valueAddCost ?? 0) +
+      (year.packagingCost ?? 0) +
+      (year.freightOutCost ?? 0) +
+      (year.rAndMCost ?? 0) +
+      (year.otherMfgCost ?? 0),
   }));
 
   const returnsData = [
-    { name: "NPV", value: calcOutput.returns.npv, color: "#10b981" },
+    { name: "NPV", value: calcOutput.returns.npv ?? 0, color: "#10b981" },
     {
       name: "IRR",
       value: calcOutput.returns.irr ? calcOutput.returns.irr * 100 : 0,
@@ -95,12 +105,16 @@ export default function CaseMetricsCharts({
       value: calcOutput.returns.paybackYears || 0,
       color: "#f59e0b",
     },
-    { name: "WACC", value: calcOutput.returns.wacc * 100, color: "#8b5cf6" },
+    {
+      name: "WACC",
+      value: (calcOutput.returns.wacc ?? 0) * 100,
+      color: "#8b5cf6",
+    },
   ];
 
   const roceData = calcOutput.returns.roceByYear.map((year) => ({
     year: `Year ${year.year}`,
-    roce: year.roce * 100,
+    roce: (year.roce ?? 0) * 100,
   }));
 
   return (
@@ -333,7 +347,7 @@ export default function CaseMetricsCharts({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(calcOutput.returns.npv)}
+              {formatCurrency(calcOutput.returns.npv ?? 0)}
             </div>
             <div className="text-sm text-gray-600">Net Present Value</div>
           </div>
@@ -355,7 +369,7 @@ export default function CaseMetricsCharts({
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">
-              {formatCurrency(calcOutput.pnl[4]?.pat || 0)}
+              {formatCurrency(calcOutput.pnl[4]?.pat ?? 0)}
             </div>
             <div className="text-sm text-gray-600">Year 5 PAT</div>
           </div>

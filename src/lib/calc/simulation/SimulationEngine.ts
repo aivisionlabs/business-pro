@@ -10,15 +10,33 @@ function setByPath<T extends Record<string, unknown>>(
   path: string,
   updater: (current: unknown) => unknown
 ): void {
-  const parts = path.split(".");
-  let target: Record<string, unknown> = obj as unknown as Record<string, unknown>;
-  for (let i = 0; i < parts.length - 1; i += 1) {
-    const key = parts[i];
-    if (!(key in target)) target[key] = {};
-    target = (target[key] as Record<string, unknown>);
+  try {
+    const parts = path.split(".");
+    let target: Record<string, unknown> = obj as unknown as Record<string, unknown>;
+
+    // Navigate to the parent object
+    for (let i = 0; i < parts.length - 1; i += 1) {
+      const key = parts[i];
+      if (!(key in target)) {
+        console.warn(`Path ${path} - key ${key} not found, creating empty object`);
+        target[key] = {};
+      }
+      target = (target[key] as Record<string, unknown>);
+    }
+
+    const last = parts[parts.length - 1];
+    const currentValue = target[last];
+
+    // Only update if the current value is a number
+    if (typeof currentValue === "number") {
+      target[last] = updater(currentValue);
+    } else {
+      console.warn(`Path ${path} - current value is not a number:`, currentValue);
+    }
+  } catch (error) {
+    console.error(`Error setting path ${path}:`, error);
+    throw new Error(`Failed to set path ${path}: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-  const last = parts[parts.length - 1];
-  target[last] = updater(target[last]);
 }
 
 function createEmptyMetrics(): Record<OutcomeMetric, number | null> {
@@ -58,28 +76,47 @@ export class SimulationEngine {
     objective: ObjectiveConfig,
     baselineOverride?: Record<OutcomeMetric, number | null>
   ): SensitivityResponse {
-    const baseline = baselineOverride ?? this.runBaseline(bcase, objective);
-    const results: SensitivityRunItem[] = [];
+    try {
+      console.log("Starting sensitivity analysis with specs:", specs.map(s => ({ variableId: s.variableId, deltas: s.deltas })));
 
-    for (const spec of specs) {
-      const percent = spec.percent !== false;
+      const baseline = baselineOverride ?? this.runBaseline(bcase, objective);
+      const results: SensitivityRunItem[] = [];
 
-      for (const delta of spec.deltas) {
-        const modified = deepClone(bcase);
-        setByPath(modified as unknown as Record<string, unknown>, spec.variableId, (current: unknown) => {
-          if (typeof current === "number") {
-            return percent ? current * (1 + delta) : current + delta;
+      for (const spec of specs) {
+        try {
+          console.log(`Processing spec for variable: ${spec.variableId}`);
+          const percent = spec.percent !== false;
+
+          for (const delta of spec.deltas) {
+            try {
+              const modified = deepClone(bcase);
+              setByPath(modified as unknown as Record<string, unknown>, spec.variableId, (current: unknown) => {
+                if (typeof current === "number") {
+                  return percent ? current * (1 + delta) : current + delta;
+                }
+                return current;
+              });
+
+              const calc = calculateScenario(modified);
+              const metrics = extractMetrics(calc, objective);
+              results.push({ variableId: spec.variableId, delta, metrics });
+            } catch (deltaError) {
+              console.error(`Error processing delta ${delta} for variable ${spec.variableId}:`, deltaError);
+              // Continue with other deltas
+            }
           }
-          return current;
-        });
-
-        const calc = calculateScenario(modified);
-        const metrics = extractMetrics(calc, objective);
-        results.push({ variableId: spec.variableId, delta, metrics });
+        } catch (specError) {
+          console.error(`Error processing spec for variable ${spec.variableId}:`, specError);
+          // Continue with other specs
+        }
       }
-    }
 
-    return { baseline, results };
+      console.log(`Sensitivity analysis completed. Processed ${results.length} results.`);
+      return { baseline, results };
+    } catch (error) {
+      console.error("Error in runSensitivity:", error);
+      throw error;
+    }
   }
 
   static runScenarios(

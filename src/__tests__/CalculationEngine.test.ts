@@ -77,6 +77,9 @@ function createTestSku(): Sku {
       operatingHoursPerDay: 24,
       workingDaysPerYear: 365,
       oee: 0.85,
+      newInfraRequired: false,
+      newMachineRequired: false,
+      newMouldRequired: false,
       costOfNewMachine: 2000000,
       costOfOldMachine: 0,
       costOfNewMould: 500000,
@@ -411,7 +414,7 @@ describe('CalculationEngine', () => {
       expect(result.interest[0]).toBeCloseTo(196493.15, 1); // Updated to match new calculation
       expect(result.pbt[0]).toBeCloseTo(301840.18, 1); // EBIT - Interest = 498333.33 - 196493.15 = 301840.18
       expect(result.tax[0]).toBeCloseTo(81460.05, 1); // Updated to match actual calculation
-      expect(result.pat[0]).toBeCloseTo(226380.13, 1); // PBT - Tax = 301840.18 - 75460.05 = 226380.13
+      expect(result.pat[0]).toBeCloseTo(220380.14, 1); // PBT - Tax = 301840.18 - 81460.05 = 220380.14
     });
   });
 

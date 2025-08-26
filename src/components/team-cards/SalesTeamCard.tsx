@@ -8,29 +8,15 @@ interface SalesTeamCardProps {
   sku: Sku;
   updateSku: (updater: (s: Sku) => Sku) => void;
   triggerAutoSave: () => void;
-  progress: number;
-  filledFields: number;
-  totalFields: number;
 }
 
 export function SalesTeamCard({
   sku,
   updateSku,
   triggerAutoSave,
-  progress,
-  filledFields,
-  totalFields,
 }: SalesTeamCardProps) {
   return (
-    <TeamCard
-      title="Sales"
-      team="Sales"
-      progress={progress}
-      filledFields={filledFields}
-      totalFields={totalFields}
-      isCollapsible={true}
-      defaultCollapsed={false}
-    >
+    <TeamCard title="Sales" isCollapsible={true} defaultCollapsed={false}>
       <Box
         sx={{
           display: "grid",

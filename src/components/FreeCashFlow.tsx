@@ -1,5 +1,6 @@
 import React from "react";
 import { formatCrores } from "@/lib/utils";
+import { CALCULATION_CONFIG } from "@/lib/calc/config";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Table from "@mui/material/Table";
@@ -57,6 +58,63 @@ export default function FreeCashFlow({ cashflow, pnl }: FreeCashFlowProps) {
     };
   };
 
+  const rows = [
+    {
+      label: "EBITDA",
+      getter: (i: number) => {
+        const breakdown = getFcfBreakdown(i);
+        return breakdown?.ebitda || 0;
+      },
+      color: "text.primary",
+      fontWeight: "normal",
+    },
+    {
+      label: "Interest",
+      getter: (i: number) => {
+        const breakdown = getFcfBreakdown(i);
+        return breakdown?.interest || 0;
+      },
+      color: "text.primary",
+      fontWeight: "normal",
+    },
+    {
+      label: "Tax",
+      getter: (i: number) => {
+        const breakdown = getFcfBreakdown(i);
+        return breakdown?.tax || 0;
+      },
+      color: "text.primary",
+      fontWeight: "normal",
+    },
+    {
+      label: "Δ Working Capital",
+      getter: (i: number) => {
+        const breakdown = getFcfBreakdown(i);
+        return breakdown?.changeInNwc || 0;
+      },
+      color: (value: number) => (value > 0 ? "error.main" : "success.main"),
+      fontWeight: "normal",
+    },
+    {
+      label: "Free Cash Flow",
+      getter: (i: number) => {
+        const breakdown = getFcfBreakdown(i);
+        return breakdown?.fcf || 0;
+      },
+      color: (value: number) => (value >= 0 ? "success.main" : "error.main"),
+      fontWeight: 700,
+    },
+    {
+      label: "Cumulative FCF",
+      getter: (i: number) => {
+        const yearData = cashflow.find((c) => c.year === i);
+        return yearData?.cumulativeFcf || 0;
+      },
+      color: (value: number) => (value >= 0 ? "success.main" : "error.main"),
+      fontWeight: "normal",
+    },
+  ];
+
   return (
     <Card variant="outlined">
       <CardContent>
@@ -72,149 +130,62 @@ export default function FreeCashFlow({ cashflow, pnl }: FreeCashFlowProps) {
                 <TableRow>
                   <TableCell
                     sx={{
-                      minWidth: { xs: 50, sm: 60, md: 80 },
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    Year
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
-                      minWidth: { xs: 70, sm: 80, md: 100 },
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    EBITDA
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
-                      minWidth: { xs: 70, sm: 80, md: 100 },
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    Interest
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
-                      minWidth: { xs: 70, sm: 80, md: 100 },
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    Tax
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
-                      minWidth: { xs: 100, sm: 120, md: 140 },
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    Δ Working Capital
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
                       minWidth: { xs: 80, sm: 100, md: 120 },
                       wordBreak: "break-word",
                     }}
                   >
-                    Free Cash Flow
+                    <Typography variant="subtitle2">Metric</Typography>
                   </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
-                      minWidth: { xs: 100, sm: 120, md: 140 },
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    Cumulative FCF
-                  </TableCell>
+                  {Array.from(
+                    { length: CALCULATION_CONFIG.UI_DISPLAY_YEARS },
+                    (_, index) => (
+                      <TableCell
+                        key={index}
+                        align="right"
+                        sx={{
+                          minWidth: { xs: 60, sm: 80, md: 100 },
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        <Typography variant="subtitle2">
+                          {index === 0 ? "Initial" : `Y${index}`}
+                        </Typography>
+                      </TableCell>
+                    )
+                  )}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {cashflow.map((yearData) => {
-                  const breakdown = getFcfBreakdown(yearData.year);
-                  if (!breakdown) return null;
-                  const wcPositive = breakdown.changeInNwc > 0;
-                  const fcfPositive = breakdown.fcf >= 0;
-                  const cumPositive = yearData.cumulativeFcf >= 0;
-                  return (
-                    <TableRow key={yearData.year} hover>
-                      <TableCell
-                        sx={{ color: "text.secondary", fontWeight: 600 }}
-                      >
-                        {yearData.year === 0 ? "Initial" : `Y${yearData.year}`}
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          fontFamily:
-                            "ui-monospace, SFMono-Regular, Menlo, monospace",
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {formatCrores(breakdown.ebitda)}
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          fontFamily:
-                            "ui-monospace, SFMono-Regular, Menlo, monospace",
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {formatCrores(breakdown.interest)}
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          fontFamily:
-                            "ui-monospace, SFMono-Regular, Menlo, monospace",
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {formatCrores(breakdown.tax)}
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          color: wcPositive ? "error.main" : "success.main",
-                          fontFamily:
-                            "ui-monospace, SFMono-Regular, Menlo, monospace",
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {formatCrores(breakdown.changeInNwc)}
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          color: fcfPositive ? "success.main" : "error.main",
-                          fontWeight: 700,
-                          fontFamily:
-                            "ui-monospace, SFMono-Regular, Menlo, monospace",
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {formatCrores(breakdown.fcf)}
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          color: cumPositive ? "success.main" : "error.main",
-                          fontFamily:
-                            "ui-monospace, SFMono-Regular, Menlo, monospace",
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {formatCrores(yearData.cumulativeFcf)}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {rows.map(({ label, getter, color, fontWeight }) => (
+                  <TableRow key={label} hover>
+                    <TableCell sx={{ color: "text.secondary" }}>
+                      {label}
+                    </TableCell>
+                    {Array.from(
+                      { length: CALCULATION_CONFIG.UI_DISPLAY_YEARS },
+                      (_, idx) => {
+                        const value = getter(idx);
+                        const cellColor =
+                          typeof color === "function" ? color(value) : color;
+                        return (
+                          <TableCell
+                            key={idx}
+                            align="right"
+                            sx={{
+                              color: cellColor,
+                              fontWeight: fontWeight,
+                              fontFamily:
+                                "ui-monospace, SFMono-Regular, Menlo, monospace",
+                              lineHeight: 1.6,
+                            }}
+                          >
+                            {formatCrores(value)}
+                          </TableCell>
+                        );
+                      }
+                    )}
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>

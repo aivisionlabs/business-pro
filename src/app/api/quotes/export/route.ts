@@ -47,34 +47,49 @@ export async function POST(request: NextRequest) {
  * Export quote to PDF format
  */
 async function exportToPDF(quote: CustomerQuote, includeDetails: boolean) {
-  // For now, return a simple HTML representation that can be printed to PDF
-  // In a real implementation, you'd use libraries like puppeteer or jsPDF
+  try {
+    // Generate HTML content
+    const htmlContent = generateQuoteHTML(quote, includeDetails);
 
-  const htmlContent = generateQuoteHTML(quote, includeDetails);
+    // Convert HTML to PDF using jsPDF with html2canvas
+    // For now, we'll return the HTML with proper headers for browser PDF generation
+    // In production, you might want to use a server-side PDF generation library
 
-  return NextResponse.json({
-    format: 'pdf',
-    content: htmlContent,
-    filename: `quote_${quote.quoteName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`,
-    mimeType: 'text/html', // Would be 'application/pdf' with actual PDF generation
-  });
+    const response = new NextResponse(htmlContent, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html',
+        'Content-Disposition': `attachment; filename="quote_${quote.quoteName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.html"`,
+      },
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    throw new Error("Failed to generate PDF");
+  }
 }
 
 /**
  * Export quote to Excel format
  */
 async function exportToExcel(quote: CustomerQuote, includeDetails: boolean) {
-  // For now, return CSV data that can be opened in Excel
-  // In a real implementation, you'd use libraries like xlsx or exceljs
+  try {
+    const csvContent = generateQuoteCSV(quote, includeDetails);
 
-  const csvContent = generateQuoteCSV(quote, includeDetails);
+    const response = new NextResponse(csvContent, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="quote_${quote.quoteName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`,
+      },
+    });
 
-  return NextResponse.json({
-    format: 'excel',
-    content: csvContent,
-    filename: `quote_${quote.quoteName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`,
-    mimeType: 'text/csv',
-  });
+    return response;
+  } catch (error) {
+    console.error("Error generating Excel:", error);
+    throw new Error("Failed to generate Excel file");
+  }
 }
 
 /**
@@ -124,6 +139,15 @@ function generateQuoteHTML(quote: CustomerQuote, includeDetails: boolean): strin
         .final-total { background-color: #e6f3ff; font-weight: bold; }
         .right-align { text-align: right; }
         .summary { background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-top: 30px; }
+
+        /* Print-specific styles */
+        @media print {
+            body { margin: 0; padding: 20px; }
+            .header { page-break-after: avoid; }
+            .quote-table { page-break-inside: avoid; }
+            .summary { page-break-inside: avoid; }
+            @page { margin: 1in; }
+        }
     </style>
 </head>
 <body>

@@ -343,6 +343,7 @@ export class CalculationEngine {
   static buildInfraDepreciation(sku: Sku): number {
     const infraInvestment = (sku.ops.costOfNewInfra || 0) + (sku.ops.costOfOldInfra || 0);
     const infraLife = sku.ops.lifeOfNewInfraYears || 30;
+
     return safeDiv(infraInvestment, infraLife);
   }
 
@@ -350,9 +351,12 @@ export class CalculationEngine {
    * Calculate total depreciation (matches original calculateTotalDepreciation)
    */
   static buildTotalDepreciation(sku: Sku): number {
-    return this.buildMachineDepreciation(sku) +
-      this.buildMouldDepreciation(sku) +
-      this.buildInfraDepreciation(sku);
+    const machineDep = this.buildMachineDepreciation(sku);
+    const mouldDep = this.buildMouldDepreciation(sku);
+    const infraDep = this.buildInfraDepreciation(sku);
+    const totalDep = machineDep + mouldDep + infraDep;
+
+    return totalDep;
   }
 
   // ============================================================================
@@ -654,7 +658,8 @@ export class CalculationEngine {
    */
   private static calculatePat(calc: CalcOutput, year: number, scenario: Scenario): number {
     const pbt = this.calculatePbt(calc, year, scenario);
-    const tax = pbt * scenario.finance.corporateTaxRatePct;
+    // Don't recalculate tax here - it's already calculated in calculateTax
+    const tax = this.calculateTax(calc, year, scenario);
     return pbt - tax;
   }
 

@@ -33,18 +33,18 @@ export type OpsInput = {
   workingDaysPerYear?: number; // default 365
   machineAvailable?: boolean; // UI-only flag; not used in calc yet
   // New fields for depreciation calculation
-  newMachineRequired?: boolean;
-  newMouldRequired?: boolean;
-  newInfraRequired?: boolean;
-  costOfNewMachine?: number;
-  costOfOldMachine?: number;
-  costOfNewMould?: number;
-  costOfOldMould?: number;
-  costOfNewInfra?: number;
-  costOfOldInfra?: number;
-  lifeOfNewMachineYears?: number; // default 15
-  lifeOfNewMouldYears?: number; // default 15
-  lifeOfNewInfraYears?: number; // default 30
+  newMachineRequired: boolean; // Changed from optional to required, defaults to false
+  newMouldRequired: boolean; // Changed from optional to required, defaults to false
+  newInfraRequired: boolean; // Changed from optional to required, defaults to false
+  costOfNewMachine: number; // Changed from optional to required, defaults to 0
+  costOfOldMachine: number; // Changed from optional to required, defaults to 0
+  costOfNewMould: number; // Changed from optional to required, defaults to 0
+  costOfOldMould: number; // Changed from optional to required, defaults to 0
+  costOfNewInfra: number; // Changed from optional to required, defaults to 0
+  costOfOldInfra: number; // Changed from optional to required, defaults to 0
+  lifeOfNewMachineYears: number; // Changed from optional to required, defaults to 15
+  lifeOfNewMouldYears: number; // Changed from optional to required, defaults to 15
+  lifeOfNewInfraYears: number; // Changed from optional to required, defaults to 30
   workingCapitalDays?: number; // days of revenue tied up (moved from capex)
 };
 
