@@ -15,6 +15,7 @@ import MergedPnlTable from "./MergedPnlTable";
 import CaseProgressBar from "./CaseProgressBar";
 
 import { formatCrores, formatPct } from "@/lib/utils";
+import { formatPaybackPeriod } from "@/lib/calc/utils";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import CalculateIcon from "@mui/icons-material/Calculate";
@@ -341,6 +342,7 @@ export default function MultiSkuEditor({
       npv: calc.returns.npv,
       irr: calc.returns.irr, // can be null
       roceY1,
+      paybackPeriod: calc.returns.paybackYears,
     };
   }, [calc, scenario]);
 
@@ -350,12 +352,14 @@ export default function MultiSkuEditor({
     npv: number;
     irr: number | null;
     roceY1: number;
+    paybackPeriod: number | null;
   }>({
     revenueY1: 0,
     ebitdaY1: 0,
     npv: 0,
     irr: null,
     roceY1: 0,
+    paybackPeriod: null,
   });
   const prevMetricsRef = React.useRef<typeof keyMetrics | null>(null);
 
@@ -371,6 +375,10 @@ export default function MultiSkuEditor({
             ? null
             : keyMetrics.irr - prev.irr,
         roceY1: keyMetrics.roceY1 - prev.roceY1,
+        paybackPeriod:
+          keyMetrics.paybackPeriod === null || prev.paybackPeriod === null
+            ? null
+            : keyMetrics.paybackPeriod - prev.paybackPeriod,
       });
     }
     prevMetricsRef.current = keyMetrics;
@@ -576,7 +584,7 @@ export default function MultiSkuEditor({
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr 1fr", sm: "1fr 1fr 1fr" },
+              gridTemplateColumns: { xs: "1fr 1fr", sm: "1fr 1fr 1fr 1fr" },
               gap: 2,
             }}
           >
@@ -651,6 +659,31 @@ export default function MultiSkuEditor({
                   sx={{ mt: 0.5 }}
                 />
               )}
+            </Box>
+            <Box textAlign="center">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                mb={0.5}
+              >
+                Payback
+              </Typography>
+              <Typography variant="subtitle1" fontWeight={700}>
+                {formatPaybackPeriod(keyMetrics.paybackPeriod)}
+              </Typography>
+              {metricDeltas.paybackPeriod !== null &&
+                metricDeltas.paybackPeriod !== 0 && (
+                  <Chip
+                    size="small"
+                    label={`${
+                      metricDeltas.paybackPeriod > 0 ? "+" : ""
+                    }${Math.abs(metricDeltas.paybackPeriod).toFixed(1)}y`}
+                    color={metricDeltas.paybackPeriod > 0 ? "error" : "success"}
+                    variant="outlined"
+                    sx={{ mt: 0.5 }}
+                  />
+                )}
             </Box>
           </Box>
         </CardContent>

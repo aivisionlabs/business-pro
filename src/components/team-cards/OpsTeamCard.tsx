@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Sku } from "@/lib/types";
 import { LabeledInput } from "../common";
 import { TeamCard } from "./TeamCard";
+import { calculateProductionMetrics } from "@/lib/calc/utils";
 import Box from "@mui/material/Box";
 import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
@@ -119,8 +120,8 @@ export function OpsTeamCard({
         >
           {sku.ops.newMachineRequired ? (
             <LabeledInput
-              label="Cost of New Machine (Rs)"
               type="number"
+              label="Cost of New Machine (Rs)"
               step={1000}
               value={sku.ops.costOfNewMachine}
               onChange={(v) =>
@@ -262,17 +263,6 @@ export function OpsTeamCard({
           />
 
           <LabeledInput
-            label="Working Days Per Year"
-            type="number"
-            step={1}
-            value={sku.ops.workingDaysPerYear || 365}
-            onChange={(v) =>
-              handleNumberChange("workingDaysPerYear", Number(v))
-            }
-            onAutoSave={triggerAutoSave}
-          />
-
-          <LabeledInput
             label="Working Capital Days"
             type="number"
             step={1}
@@ -282,6 +272,70 @@ export function OpsTeamCard({
             }
             onAutoSave={triggerAutoSave}
           />
+        </Box>
+
+        {/* Production Capacity Calculations Display */}
+        <Box
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            backgroundColor: "#f8fafc",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          <Typography
+            variant="subtitle2"
+            fontWeight={600}
+            mb={2}
+            color="text.primary"
+          >
+            Production Capacity Analysis
+          </Typography>
+          <Box
+            sx={{
+              display: "grid",
+              gap: 2,
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+            }}
+          >
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+              >
+                Daily Production Capacity
+              </Typography>
+              <Typography variant="h6" fontWeight={700} color="primary.main">
+                {calculateProductionMetrics(sku).dailyCapacity.toFixed(2)}{" "}
+                pieces/day
+              </Typography>
+            </Box>
+            <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+              >
+                Utilization Days
+              </Typography>
+              <Typography variant="h6" fontWeight={700} color="secondary.main">
+                {calculateProductionMetrics(sku).utilizationDays.toFixed(2)}{" "}
+                days
+              </Typography>
+            </Box>
+          </Box>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            mt={1}
+            display="block"
+          >
+            Based on: {sku.npd.cavities} cavities, {sku.npd.cycleTimeSeconds}s
+            cycle time,
+            {(sku.ops.oee * 100).toFixed(1)}% OEE,{" "}
+            {sku.sales.baseAnnualVolumePieces.toLocaleString()} annual volume
+          </Typography>
         </Box>
       </Box>
     </TeamCard>

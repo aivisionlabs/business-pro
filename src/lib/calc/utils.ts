@@ -34,6 +34,16 @@ export function safeDiv(numerator: number, denominator: number): number {
   return numerator / denominator;
 }
 
+/**
+ * Format payback period in years with appropriate precision
+ * @param years - Payback period in years
+ * @returns Formatted string (e.g., "3.2y" or "—" if null)
+ */
+export function formatPaybackPeriod(years: number | null): string {
+  if (years === null || years === undefined) return "—";
+  return `${years.toFixed(1)}y`;
+}
+
 export function irr(cashflows: number[], guess = 0.1): number | null {
   // Newton-Raphson IRR; returns null if not converged
   const maxIter = 100;
@@ -57,6 +67,75 @@ export function irr(cashflows: number[], guess = 0.1): number | null {
     rate = newRate;
   }
   return null;
+}
+
+/**
+ * Production capacity calculation functions
+ */
+
+/**
+ * Calculate daily production capacity for a SKU
+ * @param cavities - Number of cavities in the mould
+ * @param cycleTimeSeconds - Cycle time in seconds
+ * @param oee - Overall Equipment Effectiveness (0-1)
+ * @returns Daily production capacity in pieces
+ */
+export function calculateDailyProductionCapacity(
+  cavities: number,
+  cycleTimeSeconds: number,
+  oee: number
+): number {
+  // Handle edge case: division by zero
+  if (cycleTimeSeconds <= 0) {
+    return 0;
+  }
+
+  // Daily Capacity (in pieces) = (Cavity * 3600 * 24 * OEE) / Cycle Time (in seconds)
+  // 3600 seconds per hour * 24 hours per day = 86400 seconds per day
+  const dailyCapacity = (cavities * 86400 * oee) / cycleTimeSeconds;
+  return dailyCapacity;
+}
+
+/**
+ * Calculate utilization days for a SKU
+ * @param annualVolumePieces - Annual volume in pieces
+ * @param dailyCapacity - Daily production capacity in pieces
+ * @returns Utilization days required
+ */
+export function calculateUtilizationDays(
+  annualVolumePieces: number,
+  dailyCapacity: number
+): number {
+  // Utilization Days = Total volume (in pieces) / Daily Capacity (in pieces)
+  const utilizationDays = annualVolumePieces / dailyCapacity;
+  return utilizationDays;
+}
+
+/**
+ * Calculate production metrics for a complete SKU
+ * @param sku - The SKU object containing all required data
+ * @returns Object with dailyCapacity and utilizationDays
+ */
+export function calculateProductionMetrics(sku: {
+  npd: { cavities: number; cycleTimeSeconds: number };
+  ops: { oee: number };
+  sales: { baseAnnualVolumePieces: number };
+}) {
+  const dailyCapacity = calculateDailyProductionCapacity(
+    sku.npd.cavities,
+    sku.npd.cycleTimeSeconds,
+    sku.ops.oee
+  );
+
+  const utilizationDays = calculateUtilizationDays(
+    sku.sales.baseAnnualVolumePieces,
+    dailyCapacity
+  );
+
+  return {
+    dailyCapacity,
+    utilizationDays,
+  };
 }
 
 

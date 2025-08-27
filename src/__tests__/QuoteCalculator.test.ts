@@ -342,6 +342,14 @@ describe('QuoteCalculator', () => {
 
       // Check that totals were recalculated
       expect(updatedQuote.aggregatedTotals.totalExclGst.rsPerPiece).not.toBe(originalTotal);
+
+      // Check that updatedAt is a valid ISO string and different from original
+      expect(updatedQuote.updatedAt).toBeDefined();
+      expect(typeof updatedQuote.updatedAt).toBe('string');
+      expect(new Date(updatedQuote.updatedAt).getTime()).toBeGreaterThan(0);
+
+      // The updatedAt should be different from the original quote's updatedAt
+      // Since we're creating a new quote, the timestamps should be different
       expect(updatedQuote.updatedAt).not.toBe(quote.updatedAt);
     });
   });

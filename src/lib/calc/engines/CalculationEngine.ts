@@ -590,6 +590,12 @@ export class CalculationEngine {
     const workingCapitalDaysArray = scenario.skus.map(
       (s: Sku) => s.ops?.workingCapitalDays || 60
     );
+
+    // If all SKUs have 0 working capital days, return 0
+    if (workingCapitalDaysArray.every(days => days === 0)) {
+      return 0;
+    }
+
     const workingCapitalDays = Math.max(60, ...workingCapitalDaysArray);
     return (revenueNet * workingCapitalDays) / 365;
   }
@@ -897,84 +903,6 @@ export class CalculationEngine {
     return result;
   }
 
-  /**
-   * Calculate per-kg values for the merged P&L table
-   */
-  static calculateMergedPnlTablePerKgValues(
-    calc: CalcOutput,
-    yearIndex: number,
-    pnlAggregated: {
-      revenueNet: number[];
-      materialCost: number[];
-      materialMargin: number[];
-      conversionCost: number[];
-      grossMargin: number[];
-      sgaCost: number[];
-      ebitda: number[];
-      depreciation: number[];
-      ebit: number[];
-      interest: number[];
-      pbt: number[];
-      tax: number[];
-      pat: number[];
-    }
-  ): {
-    revenueNetPerKg: number;
-    materialCostPerKg: number;
-    materialMarginPerKg: number;
-    conversionCostPerKg: number;
-    grossMarginPerKg: number;
-    sgaCostPerKg: number;
-    ebitdaPerKg: number;
-    depreciationPerKg: number;
-    ebitPerKg: number;
-    interestPerKg: number;
-    pbtPerKg: number;
-    taxPerKg: number;
-    patPerKg: number;
-  } {
-    try {
-      const result = this.calculatePerKgForYear(calc, yearIndex, {
-        depreciation: pnlAggregated.depreciation,
-        ebit: pnlAggregated.ebit,
-        interest: pnlAggregated.interest,
-        tax: pnlAggregated.tax,
-        pat: pnlAggregated.pat,
-      });
-
-      return {
-        revenueNetPerKg: result.revenueNetPerKg,
-        materialCostPerKg: result.materialCostPerKg,
-        materialMarginPerKg: result.materialMarginPerKg,
-        conversionCostPerKg: result.conversionCostPerKg,
-        grossMarginPerKg: result.grossMarginPerKg,
-        sgaCostPerKg: result.sgaCostPerKg,
-        ebitdaPerKg: result.ebitdaPerKg,
-        depreciationPerKg: result.depreciationPerKg,
-        ebitPerKg: result.ebitPerKg,
-        interestPerKg: result.interestPerKg,
-        pbtPerKg: result.pbtPerKg,
-        taxPerKg: result.taxPerKg,
-        patPerKg: result.patPerKg,
-      };
-    } catch {
-      return {
-        revenueNetPerKg: 0,
-        materialCostPerKg: 0,
-        materialMarginPerKg: 0,
-        conversionCostPerKg: 0,
-        grossMarginPerKg: 0,
-        sgaCostPerKg: 0,
-        ebitdaPerKg: 0,
-        depreciationPerKg: 0,
-        ebitPerKg: 0,
-        interestPerKg: 0,
-        pbtPerKg: 0,
-        taxPerKg: 0,
-        patPerKg: 0,
-      };
-    }
-  }
 
   // ============================================================================
   // WEIGHTED AVERAGE CALCULATIONS
