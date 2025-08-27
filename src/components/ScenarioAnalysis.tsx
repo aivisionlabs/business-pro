@@ -57,13 +57,17 @@ function applyScenario(
       );
     }
 
-    // Working capital days: apply delta relative to current value (default 60 if undefined)
+    // Working capital days: apply delta relative to baseline (use 60 if undefined or 0)
     if (wcDays !== 0) {
-      const current = sku.ops?.workingCapitalDays ?? 60;
+      const current = sku.ops?.workingCapitalDays;
+      const baselineDays =
+        current === undefined || current === null || current === 0
+          ? 60
+          : current;
       if (!sku.ops) sku.ops = {} as any;
       sku.ops.workingCapitalDays = Math.max(
         0,
-        Math.round(current * (1 + wcDays / 100))
+        Math.round(baselineDays * (1 + wcDays / 100))
       );
     }
   });
@@ -124,10 +128,10 @@ export default function ScenarioAnalysis({ scenario }: Props) {
     return buildMetrics(modified);
   }, [scenario, c2]);
 
-  // Local precise formatters (4 decimals)
-  const formatPct4 = (n: number): string => `${(n * 100).toFixed(4)}%`;
-  const formatPayback4 = (years: number | null): string =>
-    years === null || years === undefined ? "—" : `${years.toFixed(4)}y`;
+  // Local precise formatters (1 decimal)
+  const formatPct1 = (n: number): string => `${(n * 100).toFixed(1)}%`;
+  const formatPayback1 = (years: number | null): string =>
+    years === null || years === undefined ? "—" : `${years.toFixed(1)}y`;
 
   return (
     <Box>
@@ -295,23 +299,23 @@ export default function ScenarioAnalysis({ scenario }: Props) {
               {
                 key: "npv",
                 label: "NPV",
-                format: (v: number) => formatCrores(v, 4),
+                format: (v: number) => formatCrores(v, 1),
               },
               {
                 key: "irr",
                 label: "IRR",
                 format: (v: number | null) =>
-                  v === null ? "—" : formatPct4(v),
+                  v === null ? "—" : formatPct1(v),
               },
               {
                 key: "payback",
                 label: "Payback Period",
-                format: (v: number | null) => formatPayback4(v),
+                format: (v: number | null) => formatPayback1(v),
               },
               {
                 key: "roceY1",
                 label: "RoCE (y1)",
-                format: (v: number) => formatPct4(v),
+                format: (v: number) => formatPct1(v),
               },
             ].map((row) => (
               <Box

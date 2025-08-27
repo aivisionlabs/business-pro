@@ -82,27 +82,6 @@ export default function CaseDetail({
     <main>
       <Container maxWidth="xl" sx={{ py: 4, pt: 4 }}>
         <MultiSkuEditor scenario={scenario} plantOptions={plants} />
-        <Box
-          textAlign="center"
-          mt={4}
-          sx={{ display: "flex", gap: 2, justifyContent: "center" }}
-        >
-          <Button
-            LinkComponent={Link}
-            href={`/cases/${id}/quote-calculator`}
-            variant="contained"
-            color="primary"
-          >
-            Quote Calculator
-          </Button>
-          <Button
-            LinkComponent={Link}
-            href={`/cases/${id}/chat`}
-            variant="outlined"
-          >
-            Open Chat for this Case
-          </Button>
-        </Box>
       </Container>
     </main>
   );

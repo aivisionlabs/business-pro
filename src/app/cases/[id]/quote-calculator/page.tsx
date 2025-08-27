@@ -116,20 +116,6 @@ export default function QuoteCalculatorPage({
 
         {/* Quote Calculator Component */}
         <QuoteCalculator businessCase={scenario} />
-
-        {/* Navigation Buttons */}
-        <Box sx={{ mt: 4, display: "flex", gap: 2, justifyContent: "center" }}>
-          <Button LinkComponent={Link} href={`/cases/${id}`} variant="outlined">
-            Back to Case
-          </Button>
-          <Button
-            LinkComponent={Link}
-            href={`/cases/${id}/chat`}
-            variant="contained"
-          >
-            Open Chat for this Case
-          </Button>
-        </Box>
       </Container>
     </main>
   );

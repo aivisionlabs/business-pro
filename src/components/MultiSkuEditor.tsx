@@ -19,6 +19,8 @@ import { formatPaybackPeriod } from "@/lib/calc/utils";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import CalculateIcon from "@mui/icons-material/Calculate";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import SaveIcon from "@mui/icons-material/Save";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
@@ -47,6 +49,9 @@ function useAutoSave(
   const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(
     null
   );
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const scenarioRef = React.useRef(scenario);
   const onSaveRef = React.useRef(onSave);
 
@@ -59,11 +64,21 @@ function useAutoSave(
   }, [onSave]);
 
   const triggerAutoSave = useCallback(() => {
+    setHasUnsavedChanges(true);
     if (autoSaveTimer) {
       clearTimeout(autoSaveTimer);
     }
-    const timer = setTimeout(() => {
-      onSaveRef.current(scenarioRef.current);
+    const timer = setTimeout(async () => {
+      setIsSaving(true);
+      try {
+        await onSaveRef.current(scenarioRef.current);
+        setLastSaved(new Date());
+        setHasUnsavedChanges(false);
+      } catch (error) {
+        console.error("Autosave failed:", error);
+      } finally {
+        setIsSaving(false);
+      }
       setAutoSaveTimer(null);
     }, delay);
     setAutoSaveTimer(timer);
@@ -78,7 +93,13 @@ function useAutoSave(
     };
   }, [autoSaveTimer]);
 
-  return { triggerAutoSave, autoSaveTimer };
+  return {
+    triggerAutoSave,
+    autoSaveTimer,
+    isSaving,
+    lastSaved,
+    hasUnsavedChanges,
+  };
 }
 
 export default function MultiSkuEditor({
@@ -199,7 +220,7 @@ export default function MultiSkuEditor({
   }, [scenario.skus]);
 
   // State for collapsible sections
-  const [freeCashFlowCollapsed, setFreeCashFlowCollapsed] = useState(false);
+  const [freeCashFlowCollapsed, setFreeCashFlowCollapsed] = useState(true);
 
   const handleSaveWithScenario = useCallback(
     async (scenarioToSave: Scenario) => {
@@ -236,7 +257,8 @@ export default function MultiSkuEditor({
     []
   );
 
-  const { triggerAutoSave } = useAutoSave(scenario, handleSaveWithScenario);
+  const { triggerAutoSave, isSaving, lastSaved, hasUnsavedChanges } =
+    useAutoSave(scenario, handleSaveWithScenario);
 
   // P&L Aggregated State Variables
   const [pnlAggregated, setPnlAggregated] = useState<{
@@ -524,6 +546,7 @@ export default function MultiSkuEditor({
             Case ID: {scenario.id}
           </Typography>
         </Box>
+
         <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
           <Button
             href={`/cases/${scenario.id}/case-analysis`}
@@ -541,7 +564,7 @@ export default function MultiSkuEditor({
               },
             }}
           >
-            Case Analysis
+            Risk Analysis
           </Button>
           <Button
             href={`/cases/${scenario.id}/quote-calculator`}
@@ -559,7 +582,7 @@ export default function MultiSkuEditor({
               },
             }}
           >
-            Create Customer Quotation
+            Smart Customer Quotation
           </Button>
         </Box>
       </Box>
@@ -570,6 +593,97 @@ export default function MultiSkuEditor({
         onTeamCardClick={handleTeamCardClick}
         expandedTeam={expandedTeam}
       />
+
+      {/* Autosave Status Indicator - Above sticky bar */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {isSaving ? (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Box
+                sx={{
+                  display: "inline-flex",
+                  animation: "spin 1s linear infinite",
+                  "@keyframes spin": {
+                    "0%": { transform: "rotate(0deg)" },
+                    "100%": { transform: "rotate(360deg)" },
+                  },
+                }}
+              >
+                <SaveIcon
+                  sx={{
+                    fontSize: 16,
+                    color: "text.secondary",
+                  }}
+                />
+              </Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                }}
+              >
+                Saving...
+              </Typography>
+            </Box>
+          ) : lastSaved ? (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                opacity: 0.8,
+                transition: "opacity 0.3s ease-in-out",
+              }}
+            >
+              <CheckCircleIcon
+                sx={{
+                  fontSize: 16,
+                  color: "success.main",
+                }}
+              />
+              <Typography
+                variant="caption"
+                color="success.main"
+                sx={{
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                }}
+              >
+                All changes saved
+              </Typography>
+            </Box>
+          ) : hasUnsavedChanges ? (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Typography
+                variant="caption"
+                color="warning.main"
+                sx={{
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                }}
+              >
+                Unsaved changes
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  opacity: 0.6,
+                }}
+              >
+                No unsaved changes
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </Box>
 
       {/* Global sticky metrics bar for immediate feedback */}
       <Card

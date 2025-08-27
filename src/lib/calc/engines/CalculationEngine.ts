@@ -596,7 +596,7 @@ export class CalculationEngine {
       return 0;
     }
 
-    const workingCapitalDays = Math.max(...workingCapitalDaysArray);
+    const workingCapitalDays = Math.max(60, ...workingCapitalDaysArray);
     return (revenueNet * workingCapitalDays) / 365;
   }
 
@@ -737,7 +737,7 @@ export class CalculationEngine {
     const workingCapitalDaysArray = scenario.skus.map(
       (s: Sku) => (s.ops?.workingCapitalDays ?? 60)
     );
-    const workingCapitalDays = Math.max(...workingCapitalDaysArray);
+    const workingCapitalDays = Math.max(60, ...workingCapitalDaysArray);
     const workingCapitalInvestment = (calc.pnl[year - 1]?.revenueNet || 0) * (workingCapitalDays / 365);
     const totalInvestment = totalCapex + workingCapitalInvestment;
     return totalInvestment * scenario.finance.costOfDebtPct;

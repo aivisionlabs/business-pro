@@ -114,6 +114,8 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
 
   // Aggregate volumes (sum pieces and weight per year)
   const years = CALCULATION_CONFIG.YEARS;
+
+  // Note: working capital days handled later via max across SKUs with 60-day floor (legacy behavior)
   const volumes = Array.from({ length: years }, (_, i) => {
     const year = i + 1;
     const vpcs = bySku.reduce((sum, s) => sum + (s.volumes[i]?.volumePieces || 0), 0);
@@ -191,7 +193,7 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
       return total + skuCapex;
     }, 0);
 
-    const workingCapitalDays = Math.max(...bcase.skus.map(s => s.ops?.workingCapitalDays ?? 60));
+    const workingCapitalDays = Math.max(60, ...bcase.skus.map(s => s.ops?.workingCapitalDays || 60));
     const workingCapitalInvestment = (acc.revenueNet || 0) * (workingCapitalDays / 365);
     const totalInvestment = totalCapex + workingCapitalInvestment;
     acc.interestCapex = totalInvestment * (bcase.finance.costOfDebtPct || 0);
@@ -215,8 +217,8 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
 
 
 
-  // Calculate working capital days (use max across all SKUs; default each undefined to 60)
-  const workingCapitalDays = Math.max(...bcase.skus.map(s => s.ops?.workingCapitalDays ?? 60));
+  // Calculate working capital days (use max across all SKUs, default to 60)
+  const workingCapitalDays = Math.max(60, ...bcase.skus.map(s => s.ops?.workingCapitalDays || 60));
 
   // Build cashflows and returns using CalculationEngine
   const cashflow = [];

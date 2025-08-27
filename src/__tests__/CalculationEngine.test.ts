@@ -665,22 +665,22 @@ describe('CalculationEngine', () => {
       const cavities = 4;
       const cycleTimeSeconds = 30;
       const oee = 0.85;
-      
+
       // Expected: (4 * 86400 * 0.85) / 30 = 293760 / 30 = 9792 pieces/day
       const expected = (4 * 86400 * 0.85) / 30;
       const result = calculateDailyProductionCapacity(cavities, cycleTimeSeconds, oee);
-      
+
       expect(result).toBeCloseTo(expected, 2);
     });
 
     it('should calculate utilization days correctly', () => {
       const annualVolume = 1000000; // 1M pieces
       const dailyCapacity = 5000; // 5K pieces/day
-      
+
       // Expected: 1000000 / 5000 = 200 days
       const expected = 200;
       const result = calculateUtilizationDays(annualVolume, dailyCapacity);
-      
+
       expect(result).toBeCloseTo(expected, 2);
     });
 
@@ -690,9 +690,9 @@ describe('CalculationEngine', () => {
         ops: { oee: 0.9 },
         sales: { baseAnnualVolumePieces: 2000000 }
       };
-      
+
       const result = calculateProductionMetrics(mockSku);
-      
+
       expect(result).toHaveProperty("dailyCapacity");
       expect(result).toHaveProperty("utilizationDays");
       expect(typeof result.dailyCapacity).toBe("number");
@@ -703,7 +703,7 @@ describe('CalculationEngine', () => {
       // Test with very low OEE
       const lowOeeResult = calculateDailyProductionCapacity(2, 60, 0.1);
       expect(lowOeeResult).toBeGreaterThan(0);
-      
+
       // Test with zero cycle time (should return 0 due to division by zero)
       const zeroCycleResult = calculateDailyProductionCapacity(2, 0, 0.8);
       expect(zeroCycleResult).toBe(0);
