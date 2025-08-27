@@ -257,7 +257,6 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
   cashflow[0].cumulativeFcf = cashflow[0].fcf;
   for (let i = 1; i < cashflow.length; i += 1) {
     const t = cashflow[i].year;
-    console.log("Fcf", cashflow[i].fcf);
     const pv = CalculationEngine.buildPresentValue(cashflow[i].fcf, wacc, t);
     cashflow[i].pv = pv;
     cashflow[i].cumulativeFcf = 0;

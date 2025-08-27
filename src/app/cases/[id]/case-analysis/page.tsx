@@ -6,22 +6,20 @@ import ScenarioModeling from "@/components/ScenarioModeling";
 import { useBusinessCase } from "@/lib/hooks/useFirestore";
 import {
   Analytics,
+  Assessment,
   Business,
   Home,
   Timeline,
-  Assessment,
 } from "@mui/icons-material";
 import {
   Box,
   Breadcrumbs,
+  Card,
+  CardContent,
   Container,
   Link as MuiLink,
   Paper,
   Typography,
-  Card,
-  CardContent,
-  Chip,
-  Divider,
 } from "@mui/material";
 import { useParams } from "next/navigation";
 

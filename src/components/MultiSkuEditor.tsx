@@ -328,24 +328,34 @@ export default function MultiSkuEditor({
 
   // Key metrics for quick visibility and change deltas
   const keyMetrics = useMemo(() => {
+    const roceY1 = CalculationEngine.buildRoce(
+      scenario,
+      calc.pnl[0]?.ebit ?? 0,
+      1,
+      calc.pnl[0]?.revenueNet ?? 0
+    );
+
     return {
       revenueY1: calc.pnl[0]?.revenueNet ?? 0,
       ebitdaY1: calc.pnl[0]?.ebitda ?? 0,
       npv: calc.returns.npv,
       irr: calc.returns.irr, // can be null
+      roceY1,
     };
-  }, [calc]);
+  }, [calc, scenario]);
 
   const [metricDeltas, setMetricDeltas] = useState<{
     revenueY1: number;
     ebitdaY1: number;
     npv: number;
     irr: number | null;
+    roceY1: number;
   }>({
     revenueY1: 0,
     ebitdaY1: 0,
     npv: 0,
     irr: null,
+    roceY1: 0,
   });
   const prevMetricsRef = React.useRef<typeof keyMetrics | null>(null);
 
@@ -360,6 +370,7 @@ export default function MultiSkuEditor({
           keyMetrics.irr === null || prev.irr === null
             ? null
             : keyMetrics.irr - prev.irr,
+        roceY1: keyMetrics.roceY1 - prev.roceY1,
       });
     }
     prevMetricsRef.current = keyMetrics;
@@ -565,58 +576,10 @@ export default function MultiSkuEditor({
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr 1fr", sm: "1fr 1fr 1fr 1fr" },
+              gridTemplateColumns: { xs: "1fr 1fr", sm: "1fr 1fr 1fr" },
               gap: 2,
             }}
           >
-            <Box textAlign="center">
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                display="block"
-                mb={0.5}
-              >
-                Revenue (Y1)
-              </Typography>
-              <Typography variant="subtitle1" fontWeight={700}>
-                {formatCrores(keyMetrics.revenueY1)}
-              </Typography>
-              {metricDeltas.revenueY1 !== 0 && (
-                <Chip
-                  size="small"
-                  label={`${
-                    metricDeltas.revenueY1 > 0 ? "+" : ""
-                  }${formatCrores(Math.abs(metricDeltas.revenueY1))}`}
-                  color={metricDeltas.revenueY1 > 0 ? "success" : "error"}
-                  variant="outlined"
-                  sx={{ mt: 0.5 }}
-                />
-              )}
-            </Box>
-            <Box textAlign="center">
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                display="block"
-                mb={0.5}
-              >
-                EBITDA (Y1)
-              </Typography>
-              <Typography variant="subtitle1" fontWeight={700}>
-                {formatCrores(keyMetrics.ebitdaY1)}
-              </Typography>
-              {metricDeltas.ebitdaY1 !== 0 && (
-                <Chip
-                  size="small"
-                  label={`${metricDeltas.ebitdaY1 > 0 ? "+" : ""}${formatCrores(
-                    Math.abs(metricDeltas.ebitdaY1)
-                  )}`}
-                  color={metricDeltas.ebitdaY1 > 0 ? "success" : "error"}
-                  variant="outlined"
-                  sx={{ mt: 0.5 }}
-                />
-              )}
-            </Box>
             <Box textAlign="center">
               <Typography
                 variant="caption"
@@ -660,6 +623,30 @@ export default function MultiSkuEditor({
                     Math.abs(metricDeltas.irr)
                   )}`}
                   color={metricDeltas.irr > 0 ? "success" : "error"}
+                  variant="outlined"
+                  sx={{ mt: 0.5 }}
+                />
+              )}
+            </Box>
+            <Box textAlign="center">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                mb={0.5}
+              >
+                RoCE
+              </Typography>
+              <Typography variant="subtitle1" fontWeight={700}>
+                {formatPct(keyMetrics.roceY1)}
+              </Typography>
+              {metricDeltas.roceY1 !== 0 && (
+                <Chip
+                  size="small"
+                  label={`${metricDeltas.roceY1 > 0 ? "+" : ""}${formatPct(
+                    Math.abs(metricDeltas.roceY1)
+                  )}`}
+                  color={metricDeltas.roceY1 > 0 ? "success" : "error"}
                   variant="outlined"
                   sx={{ mt: 0.5 }}
                 />

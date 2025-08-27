@@ -466,7 +466,6 @@ export class CalculationEngine {
    */
   static buildPresentValue(fcf: number, wacc: number, year: number): number {
     const pv = fcf / Math.pow(1 + wacc, year);
-    // console.log(`  buildPresentValue: ${fcf} / (1 + ${wacc})^${year} = ${fcf} / ${Math.pow(1 + wacc, year).toFixed(4)} = ${pv.toFixed(6)}`);
     return pv;
   }
 
@@ -480,7 +479,6 @@ export class CalculationEngine {
       const t = cashflows[i].year;
       const fcf = cashflows[i].fcf;
       const pv = this.buildPresentValue(fcf, wacc, t);
-      // console.log(`Year ${t}: FCF=${fcf}, PV=${pv.toFixed(2)}`);
       npv += pv;
     }
 
@@ -527,6 +525,118 @@ export class CalculationEngine {
         (cashflows.find((c) => c.year === y.year)?.nwc || 0));
       return { year: y.year, roce, netBlock: 0 }; // netBlock set to 0 since capex is removed
     });
+  }
+
+  // ============================================================================
+  // ROCE CALCULATIONS
+  // ============================================================================
+
+  /**
+   * Calculate accumulated depreciation for a specific year
+   * Accumulated Depreciation = Total Depreciation for all of previous years and current year
+   */
+  static buildAccumulatedDepreciation(
+    scenario: Scenario,
+    targetYear: number
+  ): number {
+    let accumulatedDep = 0;
+    
+    for (let year = 1; year <= targetYear; year += 1) {
+      const yearDep = this.calculateTotalDepreciation(scenario);
+      accumulatedDep += yearDep;
+    }
+    
+    return accumulatedDep;
+  }
+
+  /**
+   * Calculate Net Block for a specific year
+   * Net Block = (Cost of new machine + cost of New mould + cost of new infra) – Accumulated Depreciation
+   */
+  static buildNetBlock(
+    scenario: Scenario,
+    targetYear: number
+  ): number {
+    const totalCapex = scenario.skus.reduce((total: number, sku: Sku) => {
+      const skuCapex = (sku.ops?.costOfNewMachine || 0) + 
+                       (sku.ops?.costOfNewMould || 0) + 
+                       (sku.ops?.costOfNewInfra || 0);
+      return total + skuCapex;
+    }, 0);
+
+    const accumulatedDep = this.buildAccumulatedDepreciation(scenario, targetYear);
+    
+    return Math.max(0, totalCapex - accumulatedDep);
+  }
+
+  /**
+   * Calculate Net Working Capital for a specific year
+   */
+  static buildNetWorkingCapital(
+    scenario: Scenario,
+    revenueNet: number
+  ): number {
+    const workingCapitalDaysArray = scenario.skus.map(
+      (s: Sku) => s.ops?.workingCapitalDays || 60
+    );
+    const workingCapitalDays = Math.max(60, ...workingCapitalDaysArray);
+    return (revenueNet * workingCapitalDays) / 365;
+  }
+
+  /**
+   * Calculate RoCE for a specific year
+   * Return on Capital Employed (RoCE) = EBIT / (Net Block + Net Working Capital)
+   */
+  static buildRoce(
+    scenario: Scenario,
+    ebit: number,
+    targetYear: number,
+    revenueNet: number
+  ): number {
+    const netBlock = this.buildNetBlock(scenario, targetYear);
+    const netWorkingCapital = this.buildNetWorkingCapital(scenario, revenueNet);
+    const capitalEmployed = netBlock + netWorkingCapital;
+    
+    if (capitalEmployed <= 0) {
+      return 0;
+    }
+    
+    return ebit / capitalEmployed;
+  }
+
+  /**
+   * Calculate RoCE for all years
+   */
+  static buildRoceForAllYears(
+    scenario: Scenario,
+    calc: CalcOutput
+  ): { year: number; roce: number; netBlock: number; netWorkingCapital: number; capitalEmployed: number }[] {
+    const years = CALCULATION_CONFIG.YEARS;
+    const results = [];
+
+    for (let year = 1; year <= years; year += 1) {
+      const yearIndex = year - 1;
+      const yearPnl = calc.pnl[yearIndex];
+      
+      if (!yearPnl) continue;
+
+      const ebit = yearPnl.ebit || 0;
+      const revenueNet = yearPnl.revenueNet || 0;
+      const netBlock = this.buildNetBlock(scenario, year);
+      const netWorkingCapital = this.buildNetWorkingCapital(scenario, revenueNet);
+      const capitalEmployed = netBlock + netWorkingCapital;
+      const roce = this.buildRoce(scenario, ebit, year, revenueNet);
+
+      results.push({
+        year,
+        roce,
+        netBlock,
+        netWorkingCapital,
+        capitalEmployed
+      });
+    }
+
+    return results;
   }
 
   // ============================================================================

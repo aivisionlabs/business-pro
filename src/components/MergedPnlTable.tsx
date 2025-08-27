@@ -67,14 +67,9 @@ export default function MergedPnlTable({
 
   const rows = [
     {
-      label: "Volume (pieces)",
+      label: "Volume (mt)",
       type: "volume" as const,
-      values: volumes.map((v) => v.volumePieces),
-    },
-    {
-      label: "Volume (kg)",
-      type: "volume" as const,
-      values: volumes.map((v) => v.weightKg),
+      values: volumes.map((v) => v.weightKg / 1000),
     },
     {
       label: "Revenue (net)",
