@@ -588,7 +588,7 @@ export class CalculationEngine {
     revenueNet: number
   ): number {
     const workingCapitalDaysArray = scenario.skus.map(
-      (s: Sku) => s.ops?.workingCapitalDays || 60
+      (s: Sku) => (s.ops?.workingCapitalDays ?? 60)
     );
 
     // If all SKUs have 0 working capital days, return 0
@@ -596,7 +596,7 @@ export class CalculationEngine {
       return 0;
     }
 
-    const workingCapitalDays = Math.max(60, ...workingCapitalDaysArray);
+    const workingCapitalDays = Math.max(...workingCapitalDaysArray);
     return (revenueNet * workingCapitalDays) / 365;
   }
 
@@ -735,9 +735,9 @@ export class CalculationEngine {
     }, 0);
 
     const workingCapitalDaysArray = scenario.skus.map(
-      (s: Sku) => s.ops?.workingCapitalDays || 60
+      (s: Sku) => (s.ops?.workingCapitalDays ?? 60)
     );
-    const workingCapitalDays = Math.max(60, ...workingCapitalDaysArray);
+    const workingCapitalDays = Math.max(...workingCapitalDaysArray);
     const workingCapitalInvestment = (calc.pnl[year - 1]?.revenueNet || 0) * (workingCapitalDays / 365);
     const totalInvestment = totalCapex + workingCapitalInvestment;
     return totalInvestment * scenario.finance.costOfDebtPct;

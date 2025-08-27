@@ -1,23 +1,13 @@
 "use client";
 
-import RiskScenarios from "@/components/RiskScenarios";
 import RiskSensitivity from "@/components/RiskSensitivity";
-import ScenarioModeling from "@/components/ScenarioModeling";
+import ScenarioAnalysis from "@/components/ScenarioAnalysis";
 import { useBusinessCase } from "@/lib/hooks/useFirestore";
 import {
-  Analytics,
-  Assessment,
-  Business,
-  Home,
-  Timeline,
-} from "@mui/icons-material";
-import {
   Box,
-  Breadcrumbs,
   Card,
   CardContent,
   Container,
-  Link as MuiLink,
   Paper,
   Typography,
 } from "@mui/material";
@@ -31,24 +21,21 @@ export default function CaseAnalysisPage() {
   if (loading) {
     return (
       <Container maxWidth="xl">
-        <Box sx={{ py: 8, textAlign: "center" }}>
-          <Box
-            sx={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              borderRadius: 4,
-              p: 6,
-              color: "white",
-              maxWidth: 600,
-              mx: "auto",
-            }}
-          >
-            <Typography variant="h3" sx={{ fontWeight: 800, mb: 2 }}>
-              🔬 Loading Case Analysis
-            </Typography>
-            <Typography variant="h6" sx={{ opacity: 0.9 }}>
-              Preparing advanced risk assessment and scenario modeling tools...
-            </Typography>
-          </Box>
+        <Box sx={{ py: 4 }}>
+          <Card variant="outlined" sx={{ maxWidth: 600, mx: "auto" }}>
+            <CardContent sx={{ textAlign: "center", py: 6 }}>
+              <Typography
+                variant="h4"
+                sx={{ fontWeight: 600, mb: 2, color: "primary.main" }}
+              >
+                🔬 Loading Case Analysis
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Preparing advanced risk assessment and scenario modeling
+                tools...
+              </Typography>
+            </CardContent>
+          </Card>
         </Box>
       </Container>
     );
@@ -128,10 +115,10 @@ export default function CaseAnalysisPage() {
             <RiskSensitivity scenario={scenario} />
           </Paper>
 
-          {/* Risk Scenarios */}
+          {/* Scenario Analysis */}
           <Paper
             elevation={0}
-            sx={{ p: 4, borderRadius: 3, border: "2px solid #f0f0f0" }}
+            sx={{ p: 4, mb: 6, borderRadius: 3, border: "2px solid #f0f0f0" }}
           >
             <Typography
               variant="h4"
@@ -139,9 +126,9 @@ export default function CaseAnalysisPage() {
               gutterBottom
               sx={{ mb: 4, fontWeight: 800, color: "#1e293b" }}
             >
-              🌟 Risk Scenarios & Mitigation
+              📊 Scenario Analysis
             </Typography>
-            <RiskScenarios scenario={scenario} />
+            <ScenarioAnalysis scenario={scenario} />
           </Paper>
         </Box>
       </Box>
