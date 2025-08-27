@@ -58,89 +58,112 @@ export default function MergedPnlTable({
       volumes: 0,
     });
   const [showPrecisionDialog, setShowPrecisionDialog] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  // Calculate volumes for the first SKU (assuming all SKUs have same growth rate)
-  const volumes = React.useMemo(() => {
-    if (calc.volumes.length === 0) return [];
-    return calc.volumes;
-  }, [calc]);
+  // Get all calculated data from the centralized engine
+  const tableData = React.useMemo(() => {
+    return CalculationEngine.calculateMergedPnlTableData(calc, pnlAggregated);
+  }, [calc, pnlAggregated]);
 
   const rows = [
     {
-      label: "Volume (mt)",
+      label: "Volume (MT)",
       type: "volume" as const,
-      values: volumes.map((v) => v.weightKg / 1000),
+      values: tableData.volumes,
+      isImportant: true,
     },
     {
-      label: "Revenue (net)",
+      label: "Rev",
       type: "both" as const,
-      aggregatedValues: pnlAggregated.revenueNet,
+      aggregatedValues: tableData.revenueNet,
+      isImportant: true,
     },
     {
-      label: "Material cost",
+      label: "Material Cost",
       type: "both" as const,
       aggregatedValues: pnlAggregated.materialCost,
+      isImportant: false,
     },
     {
-      label: "Material margin",
+      label: "Material Margin (MM)",
       type: "both" as const,
-      aggregatedValues: pnlAggregated.materialMargin,
+      aggregatedValues: tableData.materialMargin,
+      isImportant: true,
     },
     {
-      label: "Conversion cost",
+      label: "Conversion Cost",
       type: "both" as const,
       aggregatedValues: pnlAggregated.conversionCost,
+      isImportant: false,
     },
     {
-      label: "Gross margin",
+      label: "Gross Margin (GM)",
       type: "both" as const,
-      aggregatedValues: pnlAggregated.grossMargin,
+      aggregatedValues: tableData.grossMargin,
+      isImportant: true,
     },
     {
-      label: "SG&A cost",
+      label: "S,G&A",
       type: "both" as const,
       aggregatedValues: pnlAggregated.sgaCost,
+      isImportant: false,
     },
     {
       label: "EBITDA",
       type: "both" as const,
-      aggregatedValues: pnlAggregated.ebitda,
+      aggregatedValues: tableData.ebitda,
+      isImportant: true,
     },
     {
       label: "Depreciation",
       type: "both" as const,
       aggregatedValues: pnlAggregated.depreciation,
+      isImportant: false,
     },
     {
       label: "EBIT",
       type: "both" as const,
       aggregatedValues: pnlAggregated.ebit,
+      isImportant: false,
     },
     {
       label: "Interest",
       type: "both" as const,
       aggregatedValues: pnlAggregated.interest,
+      isImportant: false,
     },
     {
       label: "PBT",
       type: "both" as const,
       aggregatedValues: pnlAggregated.pbt,
+      isImportant: false,
     },
     {
       label: "Tax",
       type: "both" as const,
       aggregatedValues: pnlAggregated.tax,
+      isImportant: false,
     },
     {
       label: "PAT",
       type: "both" as const,
-      aggregatedValues: pnlAggregated.pat,
+      aggregatedValues: tableData.pat,
+      isImportant: true,
+    },
+    {
+      label: "RoCE %",
+      type: "roce" as const,
+      values: tableData.rocePercentage,
+      isImportant: true,
     },
   ];
 
+  // Filter rows based on expanded state
+  const visibleRows = isExpanded ? rows : rows.filter((row) => row.isImportant);
+
   const formatValue = (
     value: number,
-    type: "volume" | "both",
+    type: "volume" | "both" | "roce",
     metric: keyof DecimalPrecisionConfig
   ) => {
     if (type === "volume") {
@@ -150,6 +173,10 @@ export default function MergedPnlTable({
           : value.toFixed(precisionConfig[metric]);
       }
       return value.toFixed(precisionConfig[metric]);
+    }
+
+    if (type === "roce") {
+      return `${value.toFixed(2)}%`;
     }
 
     if (metric === "crores") {
@@ -168,9 +195,9 @@ export default function MergedPnlTable({
         yearIndex,
         pnlAggregated
       );
-      const rowLabel = rows[rowIndex].label.toLowerCase();
+      const rowLabel = visibleRows[rowIndex].label.toLowerCase();
 
-      if (rowLabel.includes("revenue")) return result?.revenueNetPerKg ?? 0;
+      if (rowLabel.includes("rev")) return result?.revenueNetPerKg ?? 0;
       if (rowLabel.includes("material cost"))
         return result?.materialCostPerKg ?? 0;
       if (rowLabel.includes("material margin"))
@@ -179,14 +206,14 @@ export default function MergedPnlTable({
         return result?.conversionCostPerKg ?? 0;
       if (rowLabel.includes("gross margin"))
         return result?.grossMarginPerKg ?? 0;
-      if (rowLabel.includes("sg&a cost")) return result?.sgaCostPerKg ?? 0;
+      if (rowLabel.includes("s,g&a")) return result?.sgaCostPerKg ?? 0;
       if (rowLabel.includes("ebitda")) return result?.ebitdaPerKg ?? 0;
       if (rowLabel.includes("depreciation"))
         return result?.depreciationPerKg ?? 0;
       if (rowLabel.includes("ebit")) return result?.ebitPerKg ?? 0;
       if (rowLabel.includes("interest")) return result?.interestPerKg ?? 0;
-      if (rowLabel.includes("tax")) return result?.taxPerKg ?? 0;
       if (rowLabel.includes("pbt")) return result?.pbtPerKg ?? 0;
+      if (rowLabel.includes("tax")) return result?.taxPerKg ?? 0;
       if (rowLabel.includes("pat")) return result?.patPerKg ?? 0;
 
       return 0;
@@ -208,14 +235,23 @@ export default function MergedPnlTable({
             }}
           >
             <Typography variant="h6" fontWeight={600}>
-              Comprehensive P&L Analysis
+              P&L
             </Typography>
-            <IconButton
-              size="small"
-              onClick={() => setShowPrecisionDialog(true)}
-            >
-              <SettingsIcon />
-            </IconButton>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                {isExpanded ? "Collapse" : "Expand"}
+              </Button>
+              <IconButton
+                size="small"
+                onClick={() => setShowPrecisionDialog(true)}
+              >
+                <SettingsIcon />
+              </IconButton>
+            </Box>
           </Box>
 
           <Box sx={{ overflowX: "auto", width: "100%" }}>
@@ -229,25 +265,72 @@ export default function MergedPnlTable({
                 <TableHead>
                   <TableRow>
                     <TableCell
+                      align="center"
+                      colSpan={5}
                       sx={{
-                        minWidth: { xs: 100, sm: 120, md: 140 },
+                        minWidth: { xs: 400, sm: 500 },
                         wordBreak: "break-word",
                         backgroundColor: "grey.50",
                       }}
                     >
                       <Typography variant="subtitle2" fontWeight={600}>
-                        Metric
+                        Rs / Kg
+                      </Typography>
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      colSpan={5}
+                      sx={{
+                        minWidth: { xs: 400, sm: 500 },
+                        wordBreak: "break-word",
+                        backgroundColor: "grey.50",
+                      }}
+                    >
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        Rs / Cr
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell
+                      sx={{
+                        backgroundColor: "grey.50",
+                      }}
+                    >
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        P&L
                       </Typography>
                     </TableCell>
                     {Array.from(
                       { length: CALCULATION_CONFIG.UI_DISPLAY_YEARS },
                       (_, index) => (
                         <TableCell
-                          key={index}
+                          key={`kg-${index}`}
                           align="center"
                           sx={{
-                            minWidth: { xs: 80, sm: 100, md: 120 },
-                            wordBreak: "break-word",
+                            minWidth: { xs: 80, sm: 100 },
+                            backgroundColor: "grey.50",
+                            borderRight:
+                              index === CALCULATION_CONFIG.UI_DISPLAY_YEARS - 1
+                                ? "2px solid"
+                                : "none",
+                            borderColor: "divider",
+                          }}
+                        >
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            Y{index + 1}
+                          </Typography>
+                        </TableCell>
+                      )
+                    )}
+                    {Array.from(
+                      { length: CALCULATION_CONFIG.UI_DISPLAY_YEARS },
+                      (_, index) => (
+                        <TableCell
+                          key={`cr-${index}`}
+                          align="center"
+                          sx={{
+                            minWidth: { xs: 80, sm: 100 },
                             backgroundColor: "grey.50",
                           }}
                         >
@@ -260,12 +343,12 @@ export default function MergedPnlTable({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row, rowIndex) => (
+                  {visibleRows.map((row, rowIndex) => (
                     <TableRow key={row.label} hover>
                       <TableCell
                         sx={{
                           color: "text.secondary",
-                          fontWeight: row.type === "volume" ? 600 : 500,
+                          fontWeight: row.isImportant ? 600 : 400,
                           backgroundColor:
                             row.type === "volume"
                               ? "primary.50"
@@ -278,7 +361,53 @@ export default function MergedPnlTable({
                         { length: CALCULATION_CONFIG.UI_DISPLAY_YEARS },
                         (_, yearIndex) => (
                           <TableCell
-                            key={yearIndex}
+                            key={`kg-${yearIndex}`}
+                            align="center"
+                            sx={{
+                              fontFamily:
+                                "ui-monospace, SFMono-Regular, Menlo, monospace",
+                              lineHeight: 1.6,
+                              borderRight:
+                                yearIndex ===
+                                CALCULATION_CONFIG.UI_DISPLAY_YEARS - 1
+                                  ? "2px solid"
+                                  : "none",
+                              borderColor: "divider",
+                            }}
+                          >
+                            {row.type === "volume" ? (
+                              <Typography variant="body2">
+                                {formatValue(
+                                  row.values[yearIndex],
+                                  row.type,
+                                  "volumes"
+                                )}
+                              </Typography>
+                            ) : row.type === "roce" ? (
+                              <Typography variant="body2">
+                                {formatValue(
+                                  row.values[yearIndex],
+                                  row.type,
+                                  "volumes"
+                                )}
+                              </Typography>
+                            ) : (
+                              <Typography variant="body2" fontWeight={500}>
+                                {formatValue(
+                                  getPerKgValue(rowIndex, yearIndex),
+                                  row.type,
+                                  "perKg"
+                                )}
+                              </Typography>
+                            )}
+                          </TableCell>
+                        )
+                      )}
+                      {Array.from(
+                        { length: CALCULATION_CONFIG.UI_DISPLAY_YEARS },
+                        (_, yearIndex) => (
+                          <TableCell
+                            key={`cr-${yearIndex}`}
                             align="center"
                             sx={{
                               fontFamily:
@@ -294,32 +423,22 @@ export default function MergedPnlTable({
                                   "volumes"
                                 )}
                               </Typography>
+                            ) : row.type === "roce" ? (
+                              <Typography variant="body2">
+                                {formatValue(
+                                  row.values[yearIndex],
+                                  row.type,
+                                  "volumes"
+                                )}
+                              </Typography>
                             ) : (
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: 0.5,
-                                }}
-                              >
-                                <Typography variant="body2" fontWeight={500}>
-                                  {formatValue(
-                                    row.aggregatedValues[yearIndex],
-                                    row.type,
-                                    "crores"
-                                  )}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {formatValue(
-                                    getPerKgValue(rowIndex, yearIndex),
-                                    row.type,
-                                    "perKg"
-                                  )}
-                                </Typography>
-                              </Box>
+                              <Typography variant="body2" fontWeight={500}>
+                                {formatValue(
+                                  row.aggregatedValues[yearIndex],
+                                  row.type,
+                                  "crores"
+                                )}
+                              </Typography>
                             )}
                           </TableCell>
                         )

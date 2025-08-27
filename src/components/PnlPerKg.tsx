@@ -31,7 +31,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "Revenue (net)",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.revenueNetPerKg ?? 0;
         } catch (error) {
           return 0;
@@ -42,7 +46,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "Material cost",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.materialCostPerKg ?? 0;
         } catch (error) {
           return 0;
@@ -53,7 +61,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "Material margin",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.materialMarginPerKg ?? 0;
         } catch (error) {
           return 0;
@@ -64,7 +76,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "Conversion cost",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.conversionCostPerKg ?? 0;
         } catch (error) {
           return 0;
@@ -75,7 +91,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "Gross margin",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.grossMarginPerKg ?? 0;
         } catch (error) {
           return 0;
@@ -86,7 +106,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "SG&A cost",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.sgaCostPerKg ?? 0;
         } catch (error) {
           return 0;
@@ -97,7 +121,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "EBITDA",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.ebitdaPerKg ?? 0;
         } catch (error) {
           return 0;
@@ -108,7 +136,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "Depreciation",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.depreciationPerKg ?? 0;
         } catch (error) {
           return 0;
@@ -119,7 +151,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "EBIT",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.ebitPerKg ?? 0;
         } catch (error) {
           return 0;
@@ -130,7 +166,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "Interest",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.interestPerKg ?? 0;
         } catch (error) {
           return 0;
@@ -141,7 +181,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "Tax",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.taxPerKg ?? 0;
         } catch (error) {
           return 0;
@@ -152,7 +196,11 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "PBT",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.pbtPerKg ?? 0;
         } catch (error) {
           return 0;
@@ -163,8 +211,26 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
       label: "PAT",
       getter: (i: number) => {
         try {
-          const result = CalculationEngine.calculatePerKgForYear(calc, i, pnlAggregated);
+          const result = CalculationEngine.calculatePerKgForYear(
+            calc,
+            i,
+            pnlAggregated
+          );
           return result?.patPerKg ?? 0;
+        } catch (error) {
+          return 0;
+        }
+      },
+    },
+    {
+      label: "RoCE %",
+      getter: (i: number) => {
+        try {
+          // Use the pre-calculated RoCE from the main calculation engine
+          const roceData = calc.returns.roceByYear.find(
+            (item) => item.year === i + 1
+          );
+          return roceData?.roce ? roceData.roce * 100 : 0; // Convert to percentage
         } catch (error) {
           return 0;
         }
@@ -230,7 +296,9 @@ export default function PnlPerKg({ calc, pnlAggregated }: PnlPerKgProps) {
                             lineHeight: 1.6,
                           }}
                         >
-                          {formatPerKg(getter(idx) ?? 0)}
+                          {label === "RoCE %"
+                            ? `${(getter(idx) ?? 0).toFixed(2)}%`
+                            : formatPerKg(getter(idx) ?? 0)}
                         </TableCell>
                       )
                     )}

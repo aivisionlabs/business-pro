@@ -273,7 +273,7 @@ export function calculateScenario(bcase: BusinessCase): CalcOutput {
   const paybackYears = CalculationEngine.buildPaybackYears(cashflow);
 
   // RoCE and net block
-  const roceByYear = CalculationEngine.buildRoceByYear(pnl, annualDepreciationByYear, cashflow);
+  const roceByYear = CalculationEngine.buildRoceByYear(pnl, annualDepreciationByYear, cashflow, bcase);
 
   const returns = { wacc, npv, irr: irrValue, paybackYears, roceByYear };
 

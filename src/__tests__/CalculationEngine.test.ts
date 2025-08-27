@@ -139,10 +139,28 @@ function createTestScenario(): BusinessCase {
 
 function createTestCalcOutput(): CalcOutput {
   return {
-    pnl: [createTestPnlYear(1)],
-    volumes: [createTestYearVolumes(1)],
+    pnl: [
+      createTestPnlYear(1),
+      createTestPnlYear(2),
+      createTestPnlYear(3),
+      createTestPnlYear(4),
+      createTestPnlYear(5)
+    ],
+    volumes: [
+      createTestYearVolumes(1),
+      createTestYearVolumes(2),
+      createTestYearVolumes(3),
+      createTestYearVolumes(4),
+      createTestYearVolumes(5)
+    ],
     prices: [],
-    weightedAvgPricePerKg: [createTestWeightedAvgPricePerKgYear(1)],
+    weightedAvgPricePerKg: [
+      createTestWeightedAvgPricePerKgYear(1),
+      createTestWeightedAvgPricePerKgYear(2),
+      createTestWeightedAvgPricePerKgYear(3),
+      createTestWeightedAvgPricePerKgYear(4),
+      createTestWeightedAvgPricePerKgYear(5)
+    ],
     cashflow: [],
     returns: {
       wacc: 0.1,
@@ -571,6 +589,73 @@ describe('CalculationEngine', () => {
       expect(result.interestPerKg).toBe(0);
       expect(result.taxPerKg).toBe(0);
       expect(result.patPerKg).toBe(0);
+    });
+  });
+
+  describe('RoCE Calculations', () => {
+    it('should calculate accumulated depreciation correctly', () => {
+      const result = CalculationEngine.buildAccumulatedDepreciation(scenario, 3);
+      // Year 1: 176666.67, Year 2: 176666.67, Year 3: 176666.67
+      expect(result).toBeCloseTo(530000, 0);
+    });
+
+    it('should calculate net block correctly', () => {
+      const result = CalculationEngine.buildNetBlock(scenario, 1);
+      // Total capex: 2000000 + 500000 + 300000 = 2800000 (from test data)
+      // Year 1 accumulated dep: 176666.67
+      // Net block: 2800000 - 176666.67 = 2623333.33
+      expect(result).toBeCloseTo(2623333.33, 0);
+    });
+
+    it('should calculate net working capital correctly', () => {
+      const revenueNet = 950000;
+      const result = CalculationEngine.buildNetWorkingCapital(scenario, revenueNet);
+      // Working capital days: 60 (from test scenario)
+      // Net working capital: (950000 * 60) / 365 = 156164.38
+      expect(result).toBeCloseTo(156164.38, 0);
+    });
+
+    it('should calculate RoCE correctly', () => {
+      const ebit = 498333.33;
+      const targetYear = 1;
+      const revenueNet = 950000;
+      const result = CalculationEngine.buildRoce(scenario, ebit, targetYear, revenueNet);
+
+      // Net block: 2623333.33
+      // Net working capital: 156164.38
+      // Capital employed: 2623333.33 + 156164.38 = 2779497.71
+      // RoCE: 498333.33 / 2779497.71 = 0.1793 (17.93%)
+      expect(result).toBeCloseTo(0.1793, 4);
+    });
+
+    it('should calculate RoCE for all years correctly', () => {
+      const result = CalculationEngine.buildRoceForAllYears(scenario, calc);
+
+      expect(result).toHaveLength(5);
+      expect(result[0].year).toBe(1);
+      expect(result[0].roce).toBeCloseTo(0.2249, 4);
+      expect(result[0].netBlock).toBeCloseTo(2623333.33, 0);
+      expect(result[0].netWorkingCapital).toBeCloseTo(156164.38, 0);
+      expect(result[0].capitalEmployed).toBeCloseTo(2779497.71, 0);
+    });
+
+    it('should handle zero capital employed correctly', () => {
+      const zeroCapexScenario = {
+        ...scenario,
+        skus: scenario.skus.map(sku => ({
+          ...sku,
+          ops: {
+            ...sku.ops,
+            costOfNewMachine: 0,
+            costOfNewMould: 0,
+            costOfNewInfra: 0,
+            workingCapitalDays: 0 // Also set working capital to 0
+          }
+        }))
+      };
+
+      const result = CalculationEngine.buildRoce(zeroCapexScenario, 100000, 1, 500000);
+      expect(result).toBe(0); // Should return 0 when capital employed is 0
     });
   });
 });

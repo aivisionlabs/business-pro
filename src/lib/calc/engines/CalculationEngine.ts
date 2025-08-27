@@ -512,18 +512,29 @@ export class CalculationEngine {
   }
 
   /**
-   * Calculate RoCE by year
+   * Calculate RoCE by year with NetBlock support
    */
   static buildRoceByYear(
     pnl: PnlYear[],
     annualDepreciationByYear: number[],
-    cashflows: any[]
+    cashflows: any[],
+    scenario?: Scenario // Optional scenario for NetBlock calculation
   ): { year: number; roce: number; netBlock: number }[] {
     return pnl.map((y) => {
-      // Calculate RoCE based on EBIT and working capital only (removed capex dependency)
-      const roce = (y.ebit || 0) / Math.max(1e-9,
-        (cashflows.find((c) => c.year === y.year)?.nwc || 0));
-      return { year: y.year, roce, netBlock: 0 }; // netBlock set to 0 since capex is removed
+      const ebit = y.ebit || 0;
+      const nwc = cashflows.find((c) => c.year === y.year)?.nwc || 0;
+
+      let netBlock = 0;
+      if (scenario) {
+        // Calculate NetBlock if scenario is provided
+        netBlock = this.buildNetBlock(scenario, y.year);
+      }
+
+      // Calculate RoCE = EBIT / (NetBlock + NWC)
+      const capitalEmployed = netBlock + nwc;
+      const roce = capitalEmployed > 0 ? ebit / capitalEmployed : 0;
+
+      return { year: y.year, roce, netBlock };
     });
   }
 
@@ -540,12 +551,12 @@ export class CalculationEngine {
     targetYear: number
   ): number {
     let accumulatedDep = 0;
-    
+
     for (let year = 1; year <= targetYear; year += 1) {
       const yearDep = this.calculateTotalDepreciation(scenario);
       accumulatedDep += yearDep;
     }
-    
+
     return accumulatedDep;
   }
 
@@ -558,14 +569,14 @@ export class CalculationEngine {
     targetYear: number
   ): number {
     const totalCapex = scenario.skus.reduce((total: number, sku: Sku) => {
-      const skuCapex = (sku.ops?.costOfNewMachine || 0) + 
-                       (sku.ops?.costOfNewMould || 0) + 
-                       (sku.ops?.costOfNewInfra || 0);
+      const skuCapex = (sku.ops?.costOfNewMachine || 0) +
+        (sku.ops?.costOfNewMould || 0) +
+        (sku.ops?.costOfNewInfra || 0);
       return total + skuCapex;
     }, 0);
 
     const accumulatedDep = this.buildAccumulatedDepreciation(scenario, targetYear);
-    
+
     return Math.max(0, totalCapex - accumulatedDep);
   }
 
@@ -596,11 +607,11 @@ export class CalculationEngine {
     const netBlock = this.buildNetBlock(scenario, targetYear);
     const netWorkingCapital = this.buildNetWorkingCapital(scenario, revenueNet);
     const capitalEmployed = netBlock + netWorkingCapital;
-    
+
     if (capitalEmployed <= 0) {
       return 0;
     }
-    
+
     return ebit / capitalEmployed;
   }
 
@@ -617,7 +628,7 @@ export class CalculationEngine {
     for (let year = 1; year <= years; year += 1) {
       const yearIndex = year - 1;
       const yearPnl = calc.pnl[yearIndex];
-      
+
       if (!yearPnl) continue;
 
       const ebit = yearPnl.ebit || 0;
@@ -807,6 +818,162 @@ export class CalculationEngine {
         (pnlAggregated.ebit[yearIndex] - pnlAggregated.interest[yearIndex]) / totalWeight : 0,
       patPerKg: totalWeight > 0 ? pnlAggregated.pat[yearIndex] / totalWeight : 0,
     };
+  }
+
+  // ============================================================================
+  // MERGED P&L TABLE CALCULATIONS
+  // ============================================================================
+
+  /**
+   * Calculate all values needed for the merged P&L table
+   * This consolidates all calculations in one place for consistency
+   */
+  static calculateMergedPnlTableData(
+    calc: CalcOutput,
+    pnlAggregated: {
+      revenueNet: number[];
+      materialCost: number[];
+      materialMargin: number[];
+      conversionCost: number[];
+      grossMargin: number[];
+      sgaCost: number[];
+      ebitda: number[];
+      depreciation: number[];
+      ebit: number[];
+      interest: number[];
+      pbt: number[];
+      tax: number[];
+      pat: number[];
+    }
+  ): {
+    volumes: number[];
+    revenueNet: number[];
+    materialMargin: number[];
+    grossMargin: number[];
+    ebitda: number[];
+    pat: number[];
+    rocePercentage: number[];
+  } {
+    const years = CALCULATION_CONFIG.YEARS;
+    const result = {
+      volumes: [] as number[],
+      revenueNet: [] as number[],
+      materialMargin: [] as number[],
+      grossMargin: [] as number[],
+      ebitda: [] as number[],
+      pat: [] as number[],
+      rocePercentage: [] as number[],
+    };
+
+    for (let year = 1; year <= years; year += 1) {
+      const yearIndex = year - 1;
+
+      // Volume in MT (convert from kg to metric tons)
+      const volumeKg = calc.volumes[yearIndex]?.weightKg || 0;
+      result.volumes.push(volumeKg / 1000);
+
+      // Revenue Net (in crores)
+      result.revenueNet.push(pnlAggregated.revenueNet[yearIndex] || 0);
+
+      // Material Margin (in crores)
+      result.materialMargin.push(pnlAggregated.materialMargin[yearIndex] || 0);
+
+      // Gross Margin (in crores)
+      result.grossMargin.push(pnlAggregated.grossMargin[yearIndex] || 0);
+
+      // EBITDA (in crores)
+      result.ebitda.push(pnlAggregated.ebitda[yearIndex] || 0);
+
+      // PAT (in crores)
+      result.pat.push(pnlAggregated.pat[yearIndex] || 0);
+
+      // RoCE percentage
+      const roceData = calc.returns.roceByYear.find(
+        (item) => item.year === year
+      );
+      result.rocePercentage.push(roceData?.roce ? roceData.roce * 100 : 0);
+    }
+
+    return result;
+  }
+
+  /**
+   * Calculate per-kg values for the merged P&L table
+   */
+  static calculateMergedPnlTablePerKgValues(
+    calc: CalcOutput,
+    yearIndex: number,
+    pnlAggregated: {
+      revenueNet: number[];
+      materialCost: number[];
+      materialMargin: number[];
+      conversionCost: number[];
+      grossMargin: number[];
+      sgaCost: number[];
+      ebitda: number[];
+      depreciation: number[];
+      ebit: number[];
+      interest: number[];
+      pbt: number[];
+      tax: number[];
+      pat: number[];
+    }
+  ): {
+    revenueNetPerKg: number;
+    materialCostPerKg: number;
+    materialMarginPerKg: number;
+    conversionCostPerKg: number;
+    grossMarginPerKg: number;
+    sgaCostPerKg: number;
+    ebitdaPerKg: number;
+    depreciationPerKg: number;
+    ebitPerKg: number;
+    interestPerKg: number;
+    pbtPerKg: number;
+    taxPerKg: number;
+    patPerKg: number;
+  } {
+    try {
+      const result = this.calculatePerKgForYear(calc, yearIndex, {
+        depreciation: pnlAggregated.depreciation,
+        ebit: pnlAggregated.ebit,
+        interest: pnlAggregated.interest,
+        tax: pnlAggregated.tax,
+        pat: pnlAggregated.pat,
+      });
+
+      return {
+        revenueNetPerKg: result.revenueNetPerKg,
+        materialCostPerKg: result.materialCostPerKg,
+        materialMarginPerKg: result.materialMarginPerKg,
+        conversionCostPerKg: result.conversionCostPerKg,
+        grossMarginPerKg: result.grossMarginPerKg,
+        sgaCostPerKg: result.sgaCostPerKg,
+        ebitdaPerKg: result.ebitdaPerKg,
+        depreciationPerKg: result.depreciationPerKg,
+        ebitPerKg: result.ebitPerKg,
+        interestPerKg: result.interestPerKg,
+        pbtPerKg: result.pbtPerKg,
+        taxPerKg: result.taxPerKg,
+        patPerKg: result.patPerKg,
+      };
+    } catch {
+      return {
+        revenueNetPerKg: 0,
+        materialCostPerKg: 0,
+        materialMarginPerKg: 0,
+        conversionCostPerKg: 0,
+        grossMarginPerKg: 0,
+        sgaCostPerKg: 0,
+        ebitdaPerKg: 0,
+        depreciationPerKg: 0,
+        ebitPerKg: 0,
+        interestPerKg: 0,
+        pbtPerKg: 0,
+        taxPerKg: 0,
+        patPerKg: 0,
+      };
+    }
   }
 
   // ============================================================================
