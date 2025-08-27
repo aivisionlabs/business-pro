@@ -594,97 +594,6 @@ export default function MultiSkuEditor({
         expandedTeam={expandedTeam}
       />
 
-      {/* Autosave Status Indicator - Above sticky bar */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {isSaving ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Box
-                sx={{
-                  display: "inline-flex",
-                  animation: "spin 1s linear infinite",
-                  "@keyframes spin": {
-                    "0%": { transform: "rotate(0deg)" },
-                    "100%": { transform: "rotate(360deg)" },
-                  },
-                }}
-              >
-                <SaveIcon
-                  sx={{
-                    fontSize: 16,
-                    color: "text.secondary",
-                  }}
-                />
-              </Box>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  fontSize: "0.75rem",
-                  fontWeight: 500,
-                }}
-              >
-                Saving...
-              </Typography>
-            </Box>
-          ) : lastSaved ? (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 0.5,
-                opacity: 0.8,
-                transition: "opacity 0.3s ease-in-out",
-              }}
-            >
-              <CheckCircleIcon
-                sx={{
-                  fontSize: 16,
-                  color: "success.main",
-                }}
-              />
-              <Typography
-                variant="caption"
-                color="success.main"
-                sx={{
-                  fontSize: "0.75rem",
-                  fontWeight: 500,
-                }}
-              >
-                All changes saved
-              </Typography>
-            </Box>
-          ) : hasUnsavedChanges ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Typography
-                variant="caption"
-                color="warning.main"
-                sx={{
-                  fontSize: "0.75rem",
-                  fontWeight: 500,
-                }}
-              >
-                Unsaved changes
-              </Typography>
-            </Box>
-          ) : (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  fontSize: "0.75rem",
-                  fontWeight: 500,
-                  opacity: 0.6,
-                }}
-              >
-                No unsaved changes
-              </Typography>
-            </Box>
-          )}
-        </Box>
-      </Box>
-
       {/* Global sticky metrics bar for immediate feedback */}
       <Card
         variant="outlined"
@@ -802,7 +711,96 @@ export default function MultiSkuEditor({
           </Box>
         </CardContent>
       </Card>
-
+      {/* Autosave Status Indicator - Above sticky bar */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {isSaving ? (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Box
+                sx={{
+                  display: "inline-flex",
+                  animation: "spin 1s linear infinite",
+                  "@keyframes spin": {
+                    "0%": { transform: "rotate(0deg)" },
+                    "100%": { transform: "rotate(360deg)" },
+                  },
+                }}
+              >
+                <SaveIcon
+                  sx={{
+                    fontSize: 16,
+                    color: "text.secondary",
+                  }}
+                />
+              </Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                }}
+              >
+                Saving...
+              </Typography>
+            </Box>
+          ) : lastSaved ? (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                opacity: 0.8,
+                transition: "opacity 0.3s ease-in-out",
+              }}
+            >
+              <CheckCircleIcon
+                sx={{
+                  fontSize: 16,
+                  color: "success.main",
+                }}
+              />
+              <Typography
+                variant="caption"
+                color="success.main"
+                sx={{
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                }}
+              >
+                All changes saved
+              </Typography>
+            </Box>
+          ) : hasUnsavedChanges ? (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Typography
+                variant="caption"
+                color="warning.main"
+                sx={{
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                }}
+              >
+                Unsaved changes
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  opacity: 0.6,
+                }}
+              >
+                No unsaved changes
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </Box>
       {/* Team Input Forms - Show when team card is clicked */}
       {expandedTeam === "finance" && (
         <FinanceTeamCard

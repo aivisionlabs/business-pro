@@ -735,7 +735,7 @@ export default function QuoteCalculator({
                 {quote.skuItems
                   .filter((s) => s.included)
                   .map((s) => (
-                    <TableCell key={s.skuId} align="right">
+                    <TableCell key={`${s.skuId}-${s.skuName}`} align="right">
                       {s.skuName}
                     </TableCell>
                   ))}
