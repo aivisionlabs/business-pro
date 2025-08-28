@@ -1,17 +1,16 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { BusinessCase } from "@/lib/types";
 import { calculateScenario } from "@/lib/calc";
 import { CalculationEngine } from "@/lib/calc/engines";
+import { BusinessCase } from "@/lib/types";
+import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import Chip from "@mui/material/Chip";
+import { useMemo } from "react";
 
-import { formatCrores, formatPct } from "@/lib/utils";
 import { formatPaybackPeriod } from "@/lib/calc/utils";
+import { formatCrores, formatPct } from "@/lib/utils";
 
 type Props = {
   scenario: BusinessCase;

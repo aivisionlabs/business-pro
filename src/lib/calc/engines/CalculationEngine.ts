@@ -591,11 +591,6 @@ export class CalculationEngine {
       (s: Sku) => (s.ops?.workingCapitalDays ?? 60)
     );
 
-    // If all SKUs have 0 working capital days, return 0
-    if (workingCapitalDaysArray.every(days => days === 0)) {
-      return 0;
-    }
-
     const workingCapitalDays = Math.max(60, ...workingCapitalDaysArray);
     return (revenueNet * workingCapitalDays) / 365;
   }
@@ -613,6 +608,11 @@ export class CalculationEngine {
     const netBlock = this.buildNetBlock(scenario, targetYear);
     const netWorkingCapital = this.buildNetWorkingCapital(scenario, revenueNet);
     const capitalEmployed = netBlock + netWorkingCapital;
+
+    console.log("netBlock", netBlock);
+    console.log("netWorkingCapital", netWorkingCapital);
+    console.log("capitalEmployed", capitalEmployed);
+    console.log("ebit", ebit);
 
     if (capitalEmployed <= 0) {
       return 0;
