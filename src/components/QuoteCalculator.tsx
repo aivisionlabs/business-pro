@@ -631,12 +631,12 @@ export default function QuoteCalculator({
         >
           <Typography variant="h6">Smart Quote Calculator</Typography>
           <Box>
-            {/* <Tooltip title="Download Quotation PDF">
+            <Tooltip title="Download Quotation PDF">
               <IconButton color="primary" onClick={handleDownloadBaselinePdf}>
                 <DownloadIcon />
               </IconButton>
-            </Tooltip> */}
-            {/* <Tooltip title="Optimize Quote">
+            </Tooltip>
+            <Tooltip title="Optimize Quote">
               <IconButton
                 color="primary"
                 onClick={() => setOptimizationDialog(true)}
@@ -644,12 +644,12 @@ export default function QuoteCalculator({
               >
                 <CalculateIcon />
               </IconButton>
-            </Tooltip> */}
-            <Tooltip title="Download PDF">
+            </Tooltip>
+            {/* <Tooltip title="Download PDF">
               <IconButton color="primary" onClick={handleDownloadBaselinePdf}>
                 <DownloadIcon />
               </IconButton>
-            </Tooltip>
+            </Tooltip> */}
             <Tooltip title="Email Quote">
               <IconButton
                 color="primary"
@@ -695,7 +695,7 @@ export default function QuoteCalculator({
           />
         </Box>
 
-        {/* <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+        <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
           <Button
             variant="contained"
             color="secondary"
@@ -703,7 +703,7 @@ export default function QuoteCalculator({
           >
             Create Smart Quote
           </Button>
-        </Box> */}
+        </Box>
 
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
           {quote.quoteName} • SKUs:{" "}
