@@ -221,6 +221,7 @@ export default function QuoteCalculator({
     targetDiscountPct: "0",
     maxConversionPct: "30", // cap in %
   });
+  const [smartQuote, setSmartQuote] = useState<CustomerQuote | null>(null);
 
   // Debug logging
   useEffect(() => {
@@ -615,8 +616,7 @@ export default function QuoteCalculator({
   const handleCreateSmartQuote = () => {
     const smart = buildSmartQuote();
     if (!smart) return;
-    const html = buildQuoteHtml(smart, "Smart Quote", quoteMeta);
-    openHtmlAsPdf(html, `smart-quotation-${quoteMeta.referenceNo}.pdf`);
+    setSmartQuote(smart);
     setSmartDialogOpen(false);
   };
 
@@ -727,168 +727,285 @@ export default function QuoteCalculator({
         )}
 
         {/* Cross-SKU Rs per Kg table matching PDF format */}
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>SKU / Rs per Kg</TableCell>
-                {quote.skuItems
-                  .filter((s) => s.included)
-                  .map((s) => (
-                    <TableCell key={`${s.skuId}-${s.skuName}`} align="right">
-                      {s.skuName}
-                    </TableCell>
-                  ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {[
-                { key: "resin", label: "Resin", shaded: true },
-                { key: "mb", label: "MB", shaded: false },
-                { key: "wastage", label: "Wastage", shaded: true },
-                {
-                  key: "boughtOutItem",
-                  label: "Bought Out Item",
-                  shaded: false,
-                },
-                { key: "packaging", label: "Packaging", shaded: true },
-                { key: "freight", label: "Freight", shaded: false },
-                {
-                  key: "mouldAmortisation",
-                  label: "Mould Amortisation",
-                  shaded: true,
-                },
-                {
-                  key: "conversionCharge",
-                  label: "Conversion Charge",
-                  shaded: false,
-                },
-                { key: "discount", label: "Discount", shaded: true },
-              ].map((row) => (
-                <TableRow
-                  key={row.key}
-                  sx={row.shaded ? { backgroundColor: "#f9efe7" } : undefined}
-                >
-                  <TableCell>{row.label}</TableCell>
-                  {quote.skuItems
-                    .filter((s) => s.included)
-                    .map((s) => {
-                      const c = ((s.components as any)[row.key] as any) || {
-                        rsPerKg: 0,
-                      };
-                      const v = c.rsPerKg || 0;
-                      return (
-                        <TableCell key={`${s.skuId}-${row.key}`} align="right">
-                          {v > 0 ? v.toFixed(1) : "-"}
+
+        {/* Smart Quote Table */}
+        {smartQuote && (
+          <Box
+            sx={{
+              mt: 4,
+              p: 2,
+              backgroundColor: "success.50",
+              borderRadius: 1,
+              border: "1px solid",
+              borderColor: "success.200",
+            }}
+          >
+            <Typography variant="h6" gutterBottom color="success.main">
+              Smart Quote - {smartQuote.quoteName}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Target RoCE: {smartParams.targetRocePct}%, Max Conversion
+              Increase: {smartParams.maxConversionPct}%, Discount:{" "}
+              {smartParams.targetDiscountPct}%
+            </Typography>
+
+            {/* Comparison with Baseline */}
+            {quote && (
+              <Box
+                sx={{
+                  mb: 2,
+                  p: 1,
+                  backgroundColor: "info.50",
+                  borderRadius: 1,
+                }}
+              >
+                <Typography variant="body2" color="info.main">
+                  <strong>Comparison with Baseline:</strong> Total (incl. GST)
+                  increased from ₹
+                  {quote.aggregatedTotals.totalInclGst.rsPerPiece.toFixed(2)} to
+                  ₹
+                  {smartQuote.aggregatedTotals.totalInclGst.rsPerPiece.toFixed(
+                    2
+                  )}
+                  (
+                  {(
+                    (smartQuote.aggregatedTotals.totalInclGst.rsPerPiece /
+                      quote.aggregatedTotals.totalInclGst.rsPerPiece -
+                      1) *
+                    100
+                  ).toFixed(1)}
+                  % increase)
+                </Typography>
+              </Box>
+            )}
+
+            {/* Cross-SKU Rs per Kg table for Smart Quote */}
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>SKU / Rs per Kg</TableCell>
+                    {smartQuote.skuItems
+                      .filter((s) => s.included)
+                      .map((s) => (
+                        <TableCell
+                          key={`smart-${s.skuId}-${s.skuName}`}
+                          align="right"
+                        >
+                          {s.skuName}
                         </TableCell>
-                      );
-                    })}
-                </TableRow>
-              ))}
+                      ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {[
+                    { key: "resin", label: "Resin", shaded: true },
+                    { key: "mb", label: "MB", shaded: false },
+                    { key: "wastage", label: "Wastage", shaded: true },
+                    {
+                      key: "boughtOutItem",
+                      label: "Bought Out Item",
+                      shaded: false,
+                    },
+                    { key: "packaging", label: "Packaging", shaded: true },
+                    { key: "freight", label: "Freight", shaded: false },
+                    {
+                      key: "mouldAmortisation",
+                      label: "Mould Amortisation",
+                      shaded: true,
+                    },
+                    {
+                      key: "conversionCharge",
+                      label: "Conversion Charge",
+                      shaded: false,
+                    },
+                    { key: "discount", label: "Discount", shaded: true },
+                  ].map((row) => (
+                    <TableRow
+                      key={`smart-${row.key}`}
+                      sx={
+                        row.shaded ? { backgroundColor: "#f9efe7" } : undefined
+                      }
+                    >
+                      <TableCell>{row.label}</TableCell>
+                      {smartQuote.skuItems
+                        .filter((s) => s.included)
+                        .map((s) => {
+                          const c = ((s.components as any)[row.key] as any) || {
+                            rsPerKg: 0,
+                          };
+                          const v = c.rsPerKg || 0;
+                          return (
+                            <TableCell
+                              key={`smart-${s.skuId}-${row.key}`}
+                              align="right"
+                            >
+                              {v > 0 ? v.toFixed(1) : "-"}
+                            </TableCell>
+                          );
+                        })}
+                    </TableRow>
+                  ))}
 
-              {/* Totals rows */}
-              <TableRow sx={{ backgroundColor: "#f0f6ff" }}>
-                <TableCell>
-                  <strong>Total (Excl GST)</strong>
-                </TableCell>
-                {quote.skuItems
-                  .filter((s) => s.included)
-                  .map((s) => (
-                    <TableCell key={`${s.skuId}-totalEx`} align="right">
-                      <strong>{s.totalExclGst.rsPerKg.toFixed(1)}</strong>
+                  {/* Totals rows for Smart Quote */}
+                  <TableRow sx={{ backgroundColor: "#f0f6ff" }}>
+                    <TableCell>
+                      <strong>Total (Excl GST)</strong>
                     </TableCell>
-                  ))}
-              </TableRow>
-              <TableRow sx={{ backgroundColor: "#f9efe7" }}>
-                <TableCell>GST</TableCell>
-                {quote.skuItems
-                  .filter((s) => s.included)
-                  .map((s) => (
-                    <TableCell key={`${s.skuId}-gst`} align="right">
-                      {(s.gst.rsPerKg || 0).toFixed(1)}
+                    {smartQuote.skuItems
+                      .filter((s) => s.included)
+                      .map((s) => (
+                        <TableCell
+                          key={`smart-${s.skuId}-totalEx`}
+                          align="right"
+                        >
+                          <strong>{s.totalExclGst.rsPerKg.toFixed(1)}</strong>
+                        </TableCell>
+                      ))}
+                  </TableRow>
+                  <TableRow sx={{ backgroundColor: "#f9efe7" }}>
+                    <TableCell>GST</TableCell>
+                    {smartQuote.skuItems
+                      .filter((s) => s.included)
+                      .map((s) => (
+                        <TableCell key={`smart-${s.skuId}-gst`} align="right">
+                          {(s.gst.rsPerKg || 0).toFixed(1)}
+                        </TableCell>
+                      ))}
+                  </TableRow>
+                  <TableRow sx={{ backgroundColor: "#f0f6ff" }}>
+                    <TableCell>
+                      <strong>Total (Incl GST)</strong>
                     </TableCell>
-                  ))}
-              </TableRow>
-              <TableRow sx={{ backgroundColor: "#f0f6ff" }}>
-                <TableCell>
-                  <strong>Total (Incl GST)</strong>
-                </TableCell>
-                {quote.skuItems
-                  .filter((s) => s.included)
-                  .map((s) => (
-                    <TableCell key={`${s.skuId}-totalInc`} align="right">
-                      <strong>{s.totalInclGst.rsPerKg.toFixed(1)}</strong>
-                    </TableCell>
-                  ))}
-              </TableRow>
-            </TableBody>
-          </Table>
-        </TableContainer>
+                    {smartQuote.skuItems
+                      .filter((s) => s.included)
+                      .map((s) => (
+                        <TableCell
+                          key={`smart-${s.skuId}-totalInc`}
+                          align="right"
+                        >
+                          <strong>{s.totalInclGst.rsPerKg.toFixed(1)}</strong>
+                        </TableCell>
+                      ))}
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-        {/* Aggregated Totals */}
-        <Box sx={{ mt: 3, p: 2, backgroundColor: "grey.50", borderRadius: 1 }}>
-          <Typography variant="h6" gutterBottom>
-            Quote Summary
-          </Typography>
-          <TableContainer>
-            <Table size="small">
-              <TableBody>
-                <TableRow>
-                  <TableCell>
-                    <strong>Total (excl. GST)</strong>
-                  </TableCell>
-                  <TableCell align="right">
-                    <strong>
-                      ₹
-                      {quote.aggregatedTotals.totalExclGst.rsPerPiece.toFixed(
-                        2
-                      )}
-                    </strong>
-                  </TableCell>
-                  <TableCell align="right">
-                    <strong>
-                      ₹{quote.aggregatedTotals.totalExclGst.rsPerKg.toFixed(2)}
-                    </strong>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>
-                    GST ({(quote.gstRate * 100).toFixed(0)}%)
-                  </TableCell>
-                  <TableCell align="right">
-                    ₹{quote.aggregatedTotals.gst.rsPerPiece.toFixed(2)}
-                  </TableCell>
-                  <TableCell align="right">
-                    ₹{quote.aggregatedTotals.gst.rsPerKg.toFixed(2)}
-                  </TableCell>
-                </TableRow>
-                <TableRow
-                  sx={{
-                    backgroundColor: "primary.light",
-                    color: "primary.contrastText",
-                  }}
-                >
-                  <TableCell>
-                    <strong>Total (incl. GST)</strong>
-                  </TableCell>
-                  <TableCell align="right">
-                    <strong>
-                      ₹
-                      {quote.aggregatedTotals.totalInclGst.rsPerPiece.toFixed(
-                        2
-                      )}
-                    </strong>
-                  </TableCell>
-                  <TableCell align="right">
-                    <strong>
-                      ₹{quote.aggregatedTotals.totalInclGst.rsPerKg.toFixed(2)}
-                    </strong>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
+            {/* Smart Quote Aggregated Totals */}
+            <Box
+              sx={{
+                mt: 3,
+                p: 2,
+                backgroundColor: "success.100",
+                borderRadius: 1,
+              }}
+            >
+              <Typography variant="h6" gutterBottom>
+                Smart Quote Summary
+              </Typography>
+              <TableContainer>
+                <Table size="small">
+                  <TableBody>
+                    <TableRow>
+                      <TableCell>
+                        <strong>Total (excl. GST)</strong>
+                      </TableCell>
+                      <TableCell align="right">
+                        <strong>
+                          ₹
+                          {smartQuote.aggregatedTotals.totalExclGst.rsPerPiece.toFixed(
+                            2
+                          )}
+                        </strong>
+                      </TableCell>
+                      <TableCell align="right">
+                        <strong>
+                          ₹
+                          {smartQuote.aggregatedTotals.totalExclGst.rsPerKg.toFixed(
+                            2
+                          )}
+                        </strong>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>
+                        GST ({(smartQuote.gstRate * 100).toFixed(0)}%)
+                      </TableCell>
+                      <TableCell align="right">
+                        ₹{smartQuote.aggregatedTotals.gst.rsPerPiece.toFixed(2)}
+                      </TableCell>
+                      <TableCell align="right">
+                        ₹{smartQuote.aggregatedTotals.gst.rsPerKg.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow
+                      sx={{
+                        backgroundColor: "success.main",
+                        color: "success.contrastText",
+                      }}
+                    >
+                      <TableCell>
+                        <strong>Total (incl. GST)</strong>
+                      </TableCell>
+                      <TableCell align="right">
+                        <strong>
+                          ₹
+                          {smartQuote.aggregatedTotals.totalInclGst.rsPerPiece.toFixed(
+                            2
+                          )}
+                        </strong>
+                      </TableCell>
+                      <TableCell align="right">
+                        <strong>
+                          ₹
+                          {smartQuote.aggregatedTotals.totalInclGst.rsPerKg.toFixed(
+                            2
+                          )}
+                        </strong>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+
+            {/* Action buttons for Smart Quote */}
+            <Box
+              sx={{
+                mt: 2,
+                display: "flex",
+                gap: 2,
+                justifyContent: "flex-end",
+              }}
+            >
+              <Button
+                variant="outlined"
+                color="success"
+                onClick={() => {
+                  const html = buildQuoteHtml(
+                    smartQuote,
+                    "Smart Quote",
+                    quoteMeta
+                  );
+                  openHtmlAsPdf(
+                    html,
+                    `smart-quotation-${quoteMeta.referenceNo}.pdf`
+                  );
+                }}
+              >
+                Download PDF
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => setSmartQuote(null)}
+              >
+                Clear Smart Quote
+              </Button>
+            </Box>
+          </Box>
+        )}
       </CardContent>
 
       {/* Optimization Dialog */}
